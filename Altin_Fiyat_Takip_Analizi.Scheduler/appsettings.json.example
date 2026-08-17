@@ -1,0 +1,20 @@
+﻿{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=BURAYA_KENDI_SQL_SERVER_INSTANCE_ADINI_YAZ;Database=AltinFiyatTakipAnalizi;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+  },
+  "Scraper": {
+    "PythonPath": "python",
+    "ScraperScriptPath": "../../scraper/scraper/main.py",
+    "TimeoutSeconds": 300
+  },
+  "Quartz": {
+    "PriceCollectionCron": "0 0 */2 * * ?",
+    "DailyReportCron": "0 0 18 * * ?"
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.EntityFrameworkCore": "Warning"
+    }
+  }
+}

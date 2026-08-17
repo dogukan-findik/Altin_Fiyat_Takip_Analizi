@@ -1,0 +1,79 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.37111.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.Infrastructure", "Altin_Fiyat_Takip_Analizi.Infrastructure\Altin_Fiyat_Takip_Analizi.Infrastructure.csproj", "{684ABDB2-11F6-4A3A-AE51-1273158DF17A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.Application", "Altin_Fiyat_Takip_Analizi.Application\Altin_Fiyat_Takip_Analizi.Application.csproj", "{9DD11802-5879-4B90-ABBA-ACDB42EF47B2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.API", "Altin_Fiyat_Takip_Analizi.API\Altin_Fiyat_Takip_Analizi.API.csproj", "{53B28777-6651-4B94-BB80-7E0FAC714012}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.Scheduler", "Altin_Fiyat_Takip_Analizi.Scheduler\Altin_Fiyat_Takip_Analizi.Scheduler.csproj", "{70135E34-9DB9-4C14-8BF4-BCD3D331E914}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "frontend", "frontend", "{1117E5CA-EED8-4343-B459-D5BB702EB40C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.Web", "BlazorApp1\Altin_Fiyat_Takip_Analizi.Web.csproj", "{C9583E20-065C-4F68-A406-DDA196D9E696}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "scraper", "scraper", "{EFC23D50-B49B-48AC-86F5-527354833FF6}"
+EndProject
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "scraper", "scraper\scraper.pyproj", "{9344D73D-88DA-4E27-AD10-4E48420E829B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Altin_Fiyat_Takip_Analizi.Domain", "Altin_Fiyat_Takip_Analizi.Domain\Altin_Fiyat_Takip_Analizi.Domain.csproj", "{6D275CBC-0DF1-F542-CAB1-BB2B490325EF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{684ABDB2-11F6-4A3A-AE51-1273158DF17A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{684ABDB2-11F6-4A3A-AE51-1273158DF17A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{684ABDB2-11F6-4A3A-AE51-1273158DF17A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{684ABDB2-11F6-4A3A-AE51-1273158DF17A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9DD11802-5879-4B90-ABBA-ACDB42EF47B2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9DD11802-5879-4B90-ABBA-ACDB42EF47B2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9DD11802-5879-4B90-ABBA-ACDB42EF47B2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9DD11802-5879-4B90-ABBA-ACDB42EF47B2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53B28777-6651-4B94-BB80-7E0FAC714012}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53B28777-6651-4B94-BB80-7E0FAC714012}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53B28777-6651-4B94-BB80-7E0FAC714012}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53B28777-6651-4B94-BB80-7E0FAC714012}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70135E34-9DB9-4C14-8BF4-BCD3D331E914}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70135E34-9DB9-4C14-8BF4-BCD3D331E914}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70135E34-9DB9-4C14-8BF4-BCD3D331E914}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70135E34-9DB9-4C14-8BF4-BCD3D331E914}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C9583E20-065C-4F68-A406-DDA196D9E696}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C9583E20-065C-4F68-A406-DDA196D9E696}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C9583E20-065C-4F68-A406-DDA196D9E696}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C9583E20-065C-4F68-A406-DDA196D9E696}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9344D73D-88DA-4E27-AD10-4E48420E829B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9344D73D-88DA-4E27-AD10-4E48420E829B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D275CBC-0DF1-F542-CAB1-BB2B490325EF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6D275CBC-0DF1-F542-CAB1-BB2B490325EF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6D275CBC-0DF1-F542-CAB1-BB2B490325EF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6D275CBC-0DF1-F542-CAB1-BB2B490325EF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{684ABDB2-11F6-4A3A-AE51-1273158DF17A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{9DD11802-5879-4B90-ABBA-ACDB42EF47B2} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{53B28777-6651-4B94-BB80-7E0FAC714012} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{70135E34-9DB9-4C14-8BF4-BCD3D331E914} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{C9583E20-065C-4F68-A406-DDA196D9E696} = {1117E5CA-EED8-4343-B459-D5BB702EB40C}
+		{9344D73D-88DA-4E27-AD10-4E48420E829B} = {EFC23D50-B49B-48AC-86F5-527354833FF6}
+		{6D275CBC-0DF1-F542-CAB1-BB2B490325EF} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {65264ED2-451D-4868-8B74-E7E7E14B40BB}
+	EndGlobalSection
+EndGlobal

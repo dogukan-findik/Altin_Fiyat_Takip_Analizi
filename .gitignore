@@ -1,0 +1,26 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# appsettings — sýrlar içeriyor
+**/appsettings.Development.json
+**/appsettings.Production.json
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.env
+.env
+
+# Loglar
+logs/
+
+# IDE
+.vscode/
+
+src/Altin_Fiyat_Takip_Analizi.Scheduler/appsettings.json

@@ -1,0 +1,11 @@
+﻿{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost\\SQLEXPRESS;Database=AltinFiyatTakipAnalizi;Trusted_Connection=True;TrustServerCertificate=True;MultipleActiveResultSets=true"
+  },
+  "Jwt": {
+    "Key": "BURAYA_EN_AZ_32_KARAKTERLIK_GIZLI_ANAHTAR_YAZ",
+    "Issuer": "AltinFiyatTakipAnalizi",
+    "Audience": "AltinFiyatTakipAnaliziDashboard",
+    "ExpireDays": 7
+  }
+}
