@@ -12,6 +12,7 @@
     <OutputPath>.</OutputPath>
     <Name>scraper</Name>
     <RootNamespace>scraper</RootNamespace>
+    <InterpreterId>Global|VisualStudio|Python312</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -31,6 +32,7 @@
     <Compile Include="collectors\requests_collector.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="collectors\table_row_collector.py" />
     <Compile Include="config.py">
       <SubType>Code</SubType>
     </Compile>
@@ -65,9 +67,13 @@
     <Folder Include="parsers\" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include=".env" />
     <Content Include="requirements.txt">
       <SubType>Code</SubType>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|VisualStudio|Python312" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in

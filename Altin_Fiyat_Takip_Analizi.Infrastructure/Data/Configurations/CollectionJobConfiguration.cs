@@ -14,6 +14,11 @@ namespace Altin_Fiyat_Takip_Analizi.Infrastructure.Data.Configurations
             builder.Property(cj => cj.Status).HasConversion<string>().HasMaxLength(20);
             builder.Property(cj => cj.StartedAt).HasDefaultValueSql("GETUTCDATE()");
             builder.Property(cj => cj.TriggeredBy).HasMaxLength(100);
+
+            // Yeni eklenen satırlar:
+            builder.Property(cj => cj.ItemsProcessed).HasDefaultValue(0);
+            builder.Property(cj => cj.ItemsSuccess).HasDefaultValue(0);
+            builder.Property(cj => cj.ItemsFailed).HasDefaultValue(0);
         }
      }
 }
