@@ -3,19 +3,26 @@ import time
 import json
 from scraper.config import SELLERS, RATE_LIMIT_SECONDS
 from scraper.collectors.table_row_collector import TableRowCollector
-from scraper.parsers.gold_parser import parse_price, is_in_stock
+from scraper.collectors.table_row_playwright_collector import TableRowPlaywrightCollector
+from scraper.collectors.filtered_table_collector import FilteredTableCollector
+from scraper.collectors.filtered_table_playwright_collector import FilteredTablePlaywrightCollector
+from scraper.parsers.gold_parser import parse_price
 from scraper.database import DatabaseManager
 from scraper.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# NOT: SellerId'ler Sellers tablosundaki gerçek Id'lerle eşleşmeli.
-# SELLERS config'i sadece "rakip_a" gibi bir anahtar tutuyor, bunu
-# DB'deki Sellers.Id'ye eşlemek için burada basit bir sözlük kullanıyoruz.
-# Gerçek satıcılar eklendiğinde bu sözlük güncellenmeli (ya da DB'den
-# Name'e göre sorgulanmalı — ileri seviye iyileştirme).
+COLLECTOR_REGISTRY = {
+    "table_row": TableRowCollector,
+    "table_row_playwright": TableRowPlaywrightCollector,
+    "filtered_table": FilteredTableCollector,
+    "filtered_table_playwright": FilteredTablePlaywrightCollector,
+}
+
 SELLER_ID_MAP: dict[str, int] = {
-   "garantibbva": 1,  # <-- SSMS'te gerçek Id'yi kontrol edip güncelle
+    "garantibbva": 1,  # <-- SSMS'te gerçek Id'yi kontrol edip güncelle
+    "qnb": 2,          # <-- SSMS'te gerçek Id'yi kontrol edip güncelle
+    "yapikredi": 3,     # <-- SSMS'te gerçek Id'yi kontrol edip güncelle"
 }
 
 def run():
@@ -26,9 +33,7 @@ def run():
     error_message = None
 
     if not SELLERS:
-        logger.warning("SELLERS config'i boş — henüz hiçbir satıcı tanımlanmamış. "
-                        "config.py içindeki SELLERS sözlüğüne robots.txt kontrolünden "
-                        "geçmiş gerçek bir satıcı eklendiğinde scraper veri toplamaya başlayacak.")
+        logger.warning("SELLERS config'i boş — henüz hiçbir satıcı tanımlanmamış.")
         db.complete_collection_job(job_id, 0, 0, 0)
         print(json.dumps({"processed": 0, "success": 0, "failed": 0}))
         return
@@ -40,14 +45,18 @@ def run():
                 logger.error("'%s' için SELLER_ID_MAP'te eşleşen SellerId yok, atlanıyor.", seller_key)
                 continue
 
-            collector = TableRowCollector(seller_config)
-            scraped_items = collector.collect()
+            collector_type = seller_config.get("collector_type")
+            collector_cls = COLLECTOR_REGISTRY.get(collector_type)
+            if collector_cls is None:
+                logger.error("'%s' için bilinmeyen collector_type: %s", seller_key, collector_type)
+                continue
+
+            collector = collector_cls(seller_config)
 
             try:
                 scraped_items = collector.collect()
             except Exception as exc:
                 logger.error("'%s' için toplama başarısız: %s", seller_key, exc)
-                failed += len(scraped_items) if 'scraped_items' in dir() else 0
                 continue
 
             for item in scraped_items:
@@ -61,13 +70,9 @@ def run():
                 sp_id = db.get_or_create_seller_product(
                     seller_id, item.external_name, item.external_url, item.external_id
                 )
-                db.insert_price(
-                    sp_id, price, is_in_stock(item.raw_availability),
-                    collection_job_id=job_id
-                )
+                db.insert_price(sp_id, price, True, collection_job_id=job_id)
                 success += 1
 
-            # Rate limit: satıcı başına max 1 istek/dakika (dokümandaki kural)
             time.sleep(RATE_LIMIT_SECONDS)
 
         db.complete_collection_job(job_id, processed, success, failed)
@@ -77,12 +82,10 @@ def run():
         logger.exception("main.py genel hata ile durdu.")
         db.complete_collection_job(job_id, processed, success, failed, error_message=error_message)
 
-    # C# tarafındaki PriceCollectionJob.cs bu satırı stdout'tan okuyup
-    # parse edecek (ItemsProcessed/Success/Failed doldurma adımı).
     print(json.dumps({"processed": processed, "success": success, "failed": failed}))
 
     if error_message:
-        sys.exit(1)  # C# tarafı process.ExitCode != 0 kontrolü yapıyor
+        sys.exit(1)
 
 if __name__ == "__main__":
     run()

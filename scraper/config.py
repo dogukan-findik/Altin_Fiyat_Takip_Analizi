@@ -22,17 +22,39 @@ SELLERS: dict = {
     "garantibbva": {
         "name": "Garanti BBVA",
         "base_url": "https://www.garantibbva.com.tr/altin-kurlari",
+        "collector_type": "table_row_playwright",
         "selectors": {
             "row": "tr[data-id]",
             "bid": "td[data-id='bid']",
             "ask": "td[data-id='ask']",
         },
         "symbol_map": {
-            "GLDGR": "Gram Altın",       # doğrulandı (senin HTML'inden)
-            "SGLDC": "Çeyrek Altın",     # tahmin — doğrulanmadı
-            "SGLDY": "Yarım Altın",      # tahmin — doğrulanmadı
-            "SGZIYNET": "Tam Altın",     # tahmin — doğrulanmadı
-            "SCUM": "Cumhuriyet Altını", # tahmin — doğrulanmadı
+            "GLDGR": "Gram Altın",
+            "SGLDC": "Çeyrek Altın",
+            "SGLDY": "Yarım Altın",
+            "SGZIYNET": "Tam Altın",
+            "SCUM": "Cumhuriyet Altını",
+        },
+    },
+    "qnb": {
+        "name": "QNB Finansbank",
+        "base_url": "https://www.qnb.com.tr/kur-bilgileri",
+        "collector_type": "filtered_table_playwright",
+        "filter_contains": "ALTIN",
+        "selectors": {
+            "row": "table.table.default.table-zebra tbody tr",
+            "name": "td:nth-of-type(2)",
+            "price": "td:nth-of-type(4)",
+        },
+    },
+    "yapikredi": {
+        "name": "Yapı Kredi",
+        "base_url": "https://www.yapikredi.com.tr/yatirimci-kosesi/altin-bilgileri",
+        "collector_type": "filtered_table",  # önce statik dene, JS render çıkarsa _playwright'a çeviririz
+        "selectors": {
+            "row": "table#credit-table tbody tr",
+            "name": "td:nth-of-type(1)",
+            "price": "td:nth-of-type(3)",  # 3. sütun = Satış(TL)
         },
     },
 }

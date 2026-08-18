@@ -26,6 +26,8 @@
     <Compile Include="collectors\base_collector.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="collectors\filtered_table_collector.py" />
+    <Compile Include="collectors\filtered_table_playwright_collector.py" />
     <Compile Include="collectors\playwright_collector.py">
       <SubType>Code</SubType>
     </Compile>
@@ -33,6 +35,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="collectors\table_row_collector.py" />
+    <Compile Include="collectors\table_row_playwright_collector.py" />
     <Compile Include="config.py">
       <SubType>Code</SubType>
     </Compile>
