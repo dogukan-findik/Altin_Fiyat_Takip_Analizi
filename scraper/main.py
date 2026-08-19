@@ -1,6 +1,7 @@
 ﻿import sys
 import time
 import json
+import argparse
 from scraper.config import SELLERS, RATE_LIMIT_SECONDS
 from scraper.collectors.table_row_collector import TableRowCollector
 from scraper.collectors.table_row_playwright_collector import TableRowPlaywrightCollector
@@ -20,14 +21,18 @@ COLLECTOR_REGISTRY = {
 }
 
 SELLER_ID_MAP: dict[str, int] = {
-    "garantibbva": 1,  # <-- SSMS'te gerçek Id'yi kontrol edip güncelle
-    "qnb": 2,          # <-- SSMS'te gerçek Id'yi kontrol edip güncelle
-    "yapikredi": 3,     # <-- SSMS'te gerçek Id'yi kontrol edip güncelle"
+    "garantibbva": 1,  
+    "qnb": 2,          
+    "yapikredi": 3,     
 }
 
-def run():
+def run(external_job_id: int | None = None):
     db = DatabaseManager()
-    job_id = db.start_collection_job(job_type="Scheduled")
+
+   # C# (Scheduler) tetiklediyse kendi açtığı job_id'yi --job-id ile gönderir,
+    # biz onu kullanırız (ikinci bir satır açmayız). Elle/terminalden
+    # çalıştırıldığında (external_job_id=None) scraper kendi job'ını kendisi açar.
+    job_id = external_job_id if external_job_id is not None else db.start_collection_job(job_type="Manual")
 
     processed = success = failed = 0
     error_message = None
@@ -88,4 +93,11 @@ def run():
         sys.exit(1)
 
 if __name__ == "__main__":
-    run()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--job-id", type=int, default=None,
+        help="C# Scheduler'ın önceden açtığı CollectionJob Id'si. "
+             "Verilmezse scraper kendi job kaydını kendisi açar (manuel çalıştırma)."
+    )
+    args = parser.parse_args()
+    run(external_job_id=args.job_id)

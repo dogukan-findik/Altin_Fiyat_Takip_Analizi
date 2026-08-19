@@ -85,3 +85,23 @@ class DatabaseManager:
                 seller_product_id, price, currency, is_available, collection_job_id
             )
             conn.commit()
+    
+    def update_own_price(self, product_name: str, price: float) -> int:
+        """Products.OurPrice'ı doğrudan günceller — SellerProduct/PriceHistory
+        akışına HİÇ dokunmaz, tamamen bağımsız bir güncelleme. Etkilenen satır
+        sayısını döner (0 ise o isimde ürün yok demektir)."""
+        logger.info("update_own_price çağrıldı: product_name=%r, price=%r (tip: %s)",
+                product_name, price, type(price).__name__)
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            try:
+                cursor.execute(
+                    "UPDATE Products SET OurPrice = ? WHERE Name = ?",
+                    price, product_name
+            )
+            except Exception:
+                logger.exception("UPDATE sorgusu execute() sırasında hata verdi.")
+                raise
+            conn.commit()
+            return cursor.rowcount
+

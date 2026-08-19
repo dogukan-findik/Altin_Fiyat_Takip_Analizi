@@ -44,7 +44,7 @@ class FilteredTablePlaywrightCollector:
 
                 if not name_el or not price_el:
                     continue
-
+                
                 name_text = name_el.inner_text().strip()
                 if not name_text:
                     continue

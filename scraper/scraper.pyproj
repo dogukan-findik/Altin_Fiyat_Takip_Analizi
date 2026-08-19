@@ -54,6 +54,7 @@
     <Compile Include="parsers\name_normalizer.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="sync_own_prices.py" />
     <Compile Include="utils\logger.py">
       <SubType>Code</SubType>
     </Compile>

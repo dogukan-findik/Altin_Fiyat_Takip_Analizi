@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using Quartz;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
@@ -35,22 +36,28 @@ public class PriceCollectionJob : IJob
         };
         await _jobRepo.AddAsync(job);
         await _jobRepo.SaveChangesAsync();
+        var jobId = job.Id;
 
         var pythonPath = _configuration["Scraper:PythonPath"] ?? "python";
-        var scriptPath = _configuration["Scraper:ScraperScriptPath"]
+        var workingDirectory = _configuration["Scraper:WorkingDirectory"]
             ?? throw new InvalidOperationException("Scraper:ScraperScriptPath appsettings.json'da tanımlı değil.");
 
         try
         {
             var psi = new ProcessStartInfo
             {
-                FileName = pythonPath,
-                Arguments = $"\"{scriptPath}\"",
+                FileName = pythonPath, // Doğrudan python.exe'ye gider
+                Arguments = $"-m scraper.main --job-id {jobId}",
+                WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
                 UseShellExecute = false,
                 CreateNoWindow = true
             };
+
+            _logger.LogInformation("Scraper başlatılıyor: {Python} -m scraper.main --job-id {JobId} (WorkingDirectory: {Dir})",
+                pythonPath, jobId, workingDirectory);
+            _logger.LogInformation("WorkingDirectory var mı: {Exists}", Directory.Exists(workingDirectory));
 
             using var process = Process.Start(psi)
                 ?? throw new InvalidOperationException("Scraper process başlatılamadı.");
@@ -70,21 +77,16 @@ public class PriceCollectionJob : IJob
             if (process.ExitCode != 0)
                 throw new InvalidOperationException($"Scraper hata ile sonlandı (kod {process.ExitCode}): {error}");
 
-            job.Status = JobStatus.Completed;
-            job.CompletedAt = DateTime.UtcNow;
-            _logger.LogInformation("Scraper tamamlandı. Çıktı: {Output}", output);
+            _logger.LogInformation("Scraper tamamlandı (JobId={JobId}). Çıktı: {Output}", jobId, output);
         }
         catch (Exception ex)
         {
             job.Status = JobStatus.Failed;
             job.CompletedAt = DateTime.UtcNow;
             job.ErrorMessage = ex.Message;
-            _logger.LogError(ex, "PriceCollectionJob hata ile sonlandı.");
-        }
-        finally
-        {
             _jobRepo.Update(job);
             await _jobRepo.SaveChangesAsync();
+            _logger.LogError(ex, "PriceCollectionJob hata ile sonlandı (JobId={JobId}).", jobId);
         }
     }
 }
