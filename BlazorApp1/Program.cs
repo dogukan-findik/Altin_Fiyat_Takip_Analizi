@@ -2,6 +2,11 @@ using Altin_Fiyat_Takip_Analizi.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddHttpClient<Altin_Fiyat_Takip_Analizi.Web.Services.ApiService>(client =>
+{
+    client.BaseAddress = new Uri("https://localhost:7268/"); // API'nin gerçek portu neyse onu yaz
+});
+
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();

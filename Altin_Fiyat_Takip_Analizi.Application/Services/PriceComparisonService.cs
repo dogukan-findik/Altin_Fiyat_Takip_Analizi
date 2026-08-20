@@ -1,4 +1,6 @@
-﻿using Altin_Fiyat_Takip_Analizi.Application.DTOs;
+﻿using Altin_Fiyat_Takip_Analizi.Domain.Entities;
+using Altin_Fiyat_Takip_Analizi.Domain.Enums;
+using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Exceptions;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
@@ -17,19 +19,24 @@ public class PriceComparisonService : IPriceComparisonService
         _productRepo = productRepo;
     }
 
-    public async Task<PriceComparisonDto> ComparePricesAsync(int productId)
+    public async Task<PriceComparisonDto> ComparePricesAsync(int productId, SellerType? sellerType = null)
     {
         var product = await _productRepo.GetByIdAsync(productId)
             ?? throw new NotFoundException($"Ürün bulunamadı: {productId}");
 
         var last24h = DateTime.UtcNow.AddHours(-24);
 
-        var latestPrices = await _priceRepo.GetQueryable()
+        var query = _priceRepo.GetQueryable()
             .Include(p => p.SellerProduct)
                 .ThenInclude(sp => sp.Seller)
             .Where(p => p.SellerProduct.ProductId == productId
                         && p.CollectedAt >= last24h
-                        && p.IsAvailable)
+                        && p.IsAvailable);
+
+        if (sellerType.HasValue)
+            query = query.Where(p => p.SellerProduct.Seller.Type == sellerType.Value);
+
+        var latestPrices = await query
             .GroupBy(p => p.SellerProduct.SellerId)
             .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
             .ToListAsync();
@@ -64,13 +71,13 @@ public class PriceComparisonService : IPriceComparisonService
         };
     }
 
-    public async Task<List<PriceComparisonDto>> GetAllComparisonsAsync()
+    public async Task<List<PriceComparisonDto>> GetAllComparisonsAsync(SellerType? sellerType = null)
     {
         var products = await _productRepo.GetAllAsync();
         var results = new List<PriceComparisonDto>();
 
         foreach (var product in products.Where(p => p.IsActive))
-            results.Add(await ComparePricesAsync(product.Id));
+            results.Add(await ComparePricesAsync(product.Id, sellerType));
 
         return results;
     }

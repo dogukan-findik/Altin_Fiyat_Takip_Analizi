@@ -1,4 +1,5 @@
-﻿using Altin_Fiyat_Takip_Analizi.Domain.Entities;
+﻿using Altin_Fiyat_Takip_Analizi.Domain.Enums;
+using Altin_Fiyat_Takip_Analizi.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -16,5 +17,6 @@ public class SellerConfiguration : IEntityTypeConfiguration<Seller>
         builder.Property(s => s.ScrapingConfig).HasColumnType("nvarchar(max)");
         builder.Property(s => s.CreatedAt).HasDefaultValueSql("GETUTCDATE()");
         builder.Property(s => s.UpdatedAt).HasDefaultValueSql("GETUTCDATE()");
+        builder.Property(s => s.Type).HasConversion<string>().HasMaxLength(20).HasDefaultValue(SellerType.Bank);
     }
 }

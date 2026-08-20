@@ -6,6 +6,7 @@ load_dotenv()
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING", "")
 SCRAPE_TIMEOUT = int(os.getenv("SCRAPE_TIMEOUT", "30"))
 RATE_LIMIT_SECONDS = int(os.getenv("RATE_LIMIT_SECONDS", "60"))
+DETAIL_PAGE_DELAY_SECONDS = int(os.getenv("DETAIL_PAGE_DELAY_SECONDS", "2"))
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -57,4 +58,74 @@ SELLERS: dict = {
             "price": "td:nth-of-type(3)",  # 3. sütun = Satış(TL)
         },
     },
+
+    "n11_cumhuriyet": {
+        "name": "N11 Cumhuriyet Altını",
+        "base_url": "https://www.n11.com/altin-ve-gumus/cumhuriyet-altini",
+        "collector_type": "marketplace_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "fetch_seller_from_detail": True,
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",  # <-- artık burada       
+        "known_brands": [
+            "Sevim Gold", "Tuğrul Kuyumculuk", "Maxigold Kuyumculuk", "Aurex", "Kavafzade",
+            "Özbağ", "Agakulche", "Nadir Gold", "Rekor", "Fiyonk Kuyumculuk", "Archin",
+            "Yenigün Kuyumculuk", "Sarezza", "Bilezikhane", "Garanti Gold", "Leva Gold",
+            "Victoria Gold", "Özden Kuyumcusu", "Bilezikci", "Victoria", "Risegold",
+            "Zümrüt Sarraf", "Hakan Güler Kuyumculuk", "Altın Anne", "Özçam Sarraf",
+            "Runogold", "Sembol Gold", "Jeracapital", "Sahra",
+        ],
+        "selectors": {
+            "card": "a.product-item",
+            "name": "h2.product-item-title",
+            "price": "h3.price-currency",
+         
+        },
+    },
+    "n11_bilezik": {
+        "name": "N11 22 Ayar Bilezik",
+        "base_url": "https://www.n11.com/altin-ve-gumus/22-ayar-bilezik",
+        "collector_type": "marketplace_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "exclude_title_contains": ["adet"],  # çoklu paket, tekil gram fiyatı bozar
+        "price_unit": "per_gram",
+        "fetch_seller_from_detail": True,
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "known_brands": [],
+        "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
+    },
+    "n11_kulce_altin": {
+        "name": "N11 Külçe Altın",
+        "base_url": "https://www.n11.com/altin-ve-gumus/kulce-altin",
+        "collector_type": "marketplace_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "exclude_title_contains": ["adet"],
+        "price_unit": "per_gram",
+        "fetch_seller_from_detail": True,
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "known_brands": [],
+        "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
+    },
+    "n11_ziynet": {
+        "name": "N11 Ziynet Altın",
+        "base_url": "https://www.n11.com/altin-ve-gumus/ziynet-altin",
+        "collector_type": "marketplace_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "exclude_title_contains": ["adet"],
+        "fetch_seller_from_detail": True,
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "known_brands": [],
+        "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
+    },
+    "n11_sarrafiye": {
+        "name": "N11 Sarrafiyeli Takılar",
+        "base_url": "https://www.n11.com/altin-ve-gumus/koleksiyon-altin",
+        "collector_type": "marketplace_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "exclude_title_contains": ["adet"],  # "2 Adet Eski Tarihli" gibi çoklu paketler
+        "fetch_seller_from_detail": True,
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "known_brands": [],
+        "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
+    },
+
 }

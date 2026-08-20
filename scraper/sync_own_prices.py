@@ -1,4 +1,7 @@
 ﻿import json
+from scraper.config import SELLERS
+from scraper.collectors.marketplace_listing_collector import MarketplaceListingCollector
+from scraper.parsers.gold_parser import extract_gram_weight
 from playwright.sync_api import sync_playwright
 from scraper.config import USER_AGENT, SCRAPE_TIMEOUT
 from scraper.parsers.gold_parser import parse_price
@@ -93,6 +96,57 @@ def fetch_store_prices() -> dict[str, float]:
     return results
 
 
+N11_PER_GRAM_CATEGORIES = {"n11_bilezik", "n11_kulce_altin"}
+N11_FIXED_CATEGORIES = {"n11_cumhuriyet", "n11_ziynet", "n11_sarrafiye"}
+
+def fetch_n11_own_prices() -> dict[str, float]:
+    """N11'deki Ahlatcı Kuyumculuk mağaza ürünlerinden OurPrice günceller.
+    Sabit kupürlü kategorilerde (Cumhuriyet/Ziynet/Sarrafiye) match_category
+    ile Çeyrek/Yarım/Tam/Cumhuriyet'e eşler; gram bazlı kategorilerde
+    (Bilezik/Külçe Altın) fiyatı grama bölüp yazar."""
+    results: dict[str, float] = {}
+
+    for key in N11_FIXED_CATEGORIES | N11_PER_GRAM_CATEGORIES:
+        seller_config = SELLERS.get(key)
+        if not seller_config:
+            continue
+
+        # Ahlatcı'yı YAKALAMAK istiyoruz, dışlamak değil.
+        config_copy = dict(seller_config)
+        config_copy["exclude_brand_contains"] = []
+
+        collector = MarketplaceListingCollector(config_copy)
+        try:
+            items = collector.collect()
+        except Exception as exc:
+            logger.error("'%s' için n11 own-price toplama başarısız: %s", key, exc)
+            continue
+
+        for item in items:
+            seller_lower = (item.seller_name or "").lower().replace(" ", "")
+            if "ahlatcı" not in seller_lower and "ahlatci" not in seller_lower:
+                continue
+
+            price = parse_price(item.raw_price)
+            if price is None:
+                continue
+
+            if key in N11_PER_GRAM_CATEGORIES:
+                gram = extract_gram_weight(item.external_name)
+                if gram is None or gram <= 0:
+                    continue
+                price = round(price / gram, 2)
+                product_name = "22 Ayar Bilezik" if key == "n11_bilezik" else "Külçe Altın"
+            else:
+                product_name = match_category(item.external_name)
+                if product_name is None:
+                    continue
+
+            if product_name not in results:
+                results[product_name] = price
+
+    return results
+
 def run():
     db = DatabaseManager()
     updated = []
@@ -110,6 +164,14 @@ def run():
         skipped.append("Gram Altın")
 
     store_prices = fetch_store_prices()
+
+    n11_prices = fetch_n11_own_prices()
+    for product_name, price in n11_prices.items():
+        if product_name not in store_prices:
+            store_prices[product_name] = price
+        else:
+            logger.info("'%s' için ahlatcistore.com.tr fiyatı zaten var, n11 değeri atlandı.", product_name)
+
     for product_name, price in store_prices.items():
         affected = db.update_own_price(product_name, price)
         if affected > 0:

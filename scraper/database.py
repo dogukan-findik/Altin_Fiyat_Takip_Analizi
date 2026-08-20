@@ -105,3 +105,22 @@ class DatabaseManager:
             conn.commit()
             return cursor.rowcount
 
+    def get_or_create_seller(self, name: str, website_url: str | None = None) -> int:
+        """Sellers tablosunda isimle arar, yoksa oluşturur. Pazaryeri
+        collector'larının her item için dinamik satıcı çözmesi için."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Id FROM Sellers WHERE Name = ?", name)
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+
+            cursor.execute(
+                "INSERT INTO Sellers (Name, WebsiteUrl, IsActive, CreatedAt, UpdatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, 1, GETUTCDATE(), GETUTCDATE())",
+                name, website_url
+            )
+            new_id = cursor.fetchone()[0]
+            conn.commit()
+            return new_id
+

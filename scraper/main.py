@@ -7,7 +7,8 @@ from scraper.collectors.table_row_collector import TableRowCollector
 from scraper.collectors.table_row_playwright_collector import TableRowPlaywrightCollector
 from scraper.collectors.filtered_table_collector import FilteredTableCollector
 from scraper.collectors.filtered_table_playwright_collector import FilteredTablePlaywrightCollector
-from scraper.parsers.gold_parser import parse_price
+from scraper.collectors.marketplace_listing_collector import MarketplaceListingCollector
+from scraper.parsers.gold_parser import parse_price, extract_gram_weight
 from scraper.database import DatabaseManager
 from scraper.utils.logger import get_logger
 
@@ -18,6 +19,7 @@ COLLECTOR_REGISTRY = {
     "table_row_playwright": TableRowPlaywrightCollector,
     "filtered_table": FilteredTableCollector,
     "filtered_table_playwright": FilteredTablePlaywrightCollector,
+     "marketplace_listing": MarketplaceListingCollector,
 }
 
 SELLER_ID_MAP: dict[str, int] = {
@@ -45,11 +47,6 @@ def run(external_job_id: int | None = None):
 
     try:
         for seller_key, seller_config in SELLERS.items():
-            seller_id = SELLER_ID_MAP.get(seller_key)
-            if seller_id is None:
-                logger.error("'%s' için SELLER_ID_MAP'te eşleşen SellerId yok, atlanıyor.", seller_key)
-                continue
-
             collector_type = seller_config.get("collector_type")
             collector_cls = COLLECTOR_REGISTRY.get(collector_type)
             if collector_cls is None:
@@ -64,19 +61,51 @@ def run(external_job_id: int | None = None):
                 logger.error("'%s' için toplama başarısız: %s", seller_key, exc)
                 continue
 
-            for item in scraped_items:
-                processed += 1
-                price = parse_price(item.raw_price)
-                if price is None:
-                    logger.warning("Fiyat parse edilemedi, atlanıyor: %s", item.external_name)
-                    failed += 1
+            if collector_type == "marketplace_listing":
+                # Çoklu satıcı: her item kendi Seller'ını (marka) taşıyor
+                price_unit = seller_config.get("price_unit", "total")
+                for item in scraped_items:
+                    processed += 1
+                    price = parse_price(item.raw_price)
+                    if price is None:
+                        logger.warning("Fiyat parse edilemedi, atlanıyor: %s", item.external_name)
+                        failed += 1
+                        continue
+
+                    if price_unit == "per_gram":
+                        gram = extract_gram_weight(item.external_name)
+                        if gram is None or gram <= 0:
+                            logger.warning("Gramaj çıkarılamadı, atlanıyor: %s", item.external_name)
+                            failed += 1
+                            continue
+                        price = round(price / gram, 2)
+
+                    seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"])
+                    sp_id = db.get_or_create_seller_product(
+                        seller_id, item.external_name, item.external_url, item.external_id
+                    )
+                    db.insert_price(sp_id, price, True, collection_job_id=job_id)
+                    success += 1
+            else:
+                # Tekil satıcı: sabit SELLER_ID_MAP (bankalar)
+                seller_id = SELLER_ID_MAP.get(seller_key)
+                if seller_id is None:
+                    logger.error("'%s' için SELLER_ID_MAP'te eşleşen SellerId yok, atlanıyor.", seller_key)
                     continue
 
-                sp_id = db.get_or_create_seller_product(
-                    seller_id, item.external_name, item.external_url, item.external_id
-                )
-                db.insert_price(sp_id, price, True, collection_job_id=job_id)
-                success += 1
+                for item in scraped_items:
+                    processed += 1
+                    price = parse_price(item.raw_price)
+                    if price is None:
+                        logger.warning("Fiyat parse edilemedi, atlanıyor: %s", item.external_name)
+                        failed += 1
+                        continue
+
+                    sp_id = db.get_or_create_seller_product(
+                        seller_id, item.external_name, item.external_url, item.external_id
+                    )
+                    db.insert_price(sp_id, price, True, collection_job_id=job_id)
+                    success += 1
 
             time.sleep(RATE_LIMIT_SECONDS)
 

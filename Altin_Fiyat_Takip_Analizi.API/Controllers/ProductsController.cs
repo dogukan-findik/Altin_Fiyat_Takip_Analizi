@@ -1,5 +1,6 @@
 ﻿using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
+using Altin_Fiyat_Takip_Analizi.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -62,9 +63,12 @@ public class ProductsController : ControllerBase
         => Ok(await _historyService.GetForProductAsync(id, days));
 
     [HttpGet("{id:int}/compare")]
-    public async Task<ActionResult<PriceComparisonDto>> Compare(int id)
-        => Ok(await _comparisonService.ComparePricesAsync(id));
+    public async Task<ActionResult<PriceComparisonDto>> Compare(int id, [FromQuery] SellerType? sellerType = null)
+     => Ok(await _comparisonService.ComparePricesAsync(id, sellerType));
 
+    [HttpGet("compare-all")]
+    public async Task<ActionResult<List<PriceComparisonDto>>> CompareAll([FromQuery] SellerType? sellerType = null)
+    => Ok(await _comparisonService.GetAllComparisonsAsync(sellerType));
 
 }
 

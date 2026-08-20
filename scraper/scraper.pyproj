@@ -28,6 +28,7 @@
     </Compile>
     <Compile Include="collectors\filtered_table_collector.py" />
     <Compile Include="collectors\filtered_table_playwright_collector.py" />
+    <Compile Include="collectors\marketplace_listing_collector.py" />
     <Compile Include="collectors\playwright_collector.py">
       <SubType>Code</SubType>
     </Compile>

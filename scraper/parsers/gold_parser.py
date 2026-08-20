@@ -35,3 +35,12 @@ def is_in_stock(raw_availability_text: str | None) -> bool:
     out_of_stock_keywords = ['tükendi', 'stokta yok', 'stok yok', 'satışta değil']
     text = raw_availability_text.lower()
     return not any(kw in text for kw in out_of_stock_keywords)
+
+def extract_gram_weight(text: str) -> float | None:
+    """Başlıktan gramaj çıkarır: '10 Gram 22 Ayar...', '5 Gr 24 Ayar...' gibi.
+    Bulunamazsa None döner — çağıran taraf bunu 'gram bazlı normalize
+    edilemedi, bu kaydı atla' sinyali olarak yorumlamalı."""
+    match = re.search(r'(\d+(?:[.,]\d+)?)\s*(gr|gram|g)\b', text.lower())
+    if not match:
+        return None
+    return float(match.group(1).replace(',', '.'))
