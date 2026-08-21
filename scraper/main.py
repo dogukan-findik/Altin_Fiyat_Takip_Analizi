@@ -1,7 +1,6 @@
 ﻿import sys
 import time
 import json
-import argparse
 from scraper.config import SELLERS, RATE_LIMIT_SECONDS
 from scraper.collectors.table_row_collector import TableRowCollector
 from scraper.collectors.table_row_playwright_collector import TableRowPlaywrightCollector
@@ -19,21 +18,74 @@ COLLECTOR_REGISTRY = {
     "table_row_playwright": TableRowPlaywrightCollector,
     "filtered_table": FilteredTableCollector,
     "filtered_table_playwright": FilteredTablePlaywrightCollector,
-     "marketplace_listing": MarketplaceListingCollector,
+    "marketplace_listing": MarketplaceListingCollector,
 }
 
 SELLER_ID_MAP: dict[str, int] = {
-    "garantibbva": 1,  
-    "qnb": 2,          
-    "yapikredi": 3,     
+    "garantibbva": 1,
+    "qnb": 2,
+    "yapikredi": 3,
+    # n11 kategorileri buraya girmiyor — her item kendi Seller'ını
+    # (mağaza adı) dinamik çözüyor, bkz. marketplace_listing dalı.
 }
+
+# Bankalarda ham isimden Product.Name'e statik eşleme — her banka kendi
+# formatında isim veriyor (Garanti: "Gram Altın", QNB: "ALTIN (GRAM)",
+# Yapı Kredi: "Gram"), tek bir ortak kural yazmak yerine açıkça eşliyoruz.
+BANK_PRODUCT_NAME_MAP: dict[str, dict[str, str]] = {
+    "garantibbva": {
+        "Gram Altın": "Gram Altın",
+        "Çeyrek Altın": "Çeyrek Altın",
+        "Yarım Altın": "Yarım Altın",
+        "Tam Altın": "Tam Altın",
+    },
+    "qnb": {
+        "ALTIN (GRAM)": "Gram Altın",
+    },
+    "yapikredi": {
+        "Gram": "Gram Altın",
+        "Çeyrek": "Çeyrek Altın",
+        "Yarım": "Yarım Altın",
+        "Tam": "Tam Altın",
+    },
+}
+
+# N11'de Ziynet/Sarrafiye/Cumhuriyet kategorileri başlıkta kategori adı
+# geçiriyor, buradan Çeyrek/Yarım/Tam'a eşliyoruz. Cumhuriyet Altını'nı
+# bilinçli olarak Tam Altın'a eşliyoruz (yaklaşık eşdeğer, tam aynı değil).
+FIXED_PRODUCT_KEYWORDS = [
+    ("Çeyrek Altın", ["çeyrek"]),
+    ("Yarım Altın", ["yarım", "yarim"]),
+    ("Tam Altın", ["tam altın", "tam altin", "tam lira", "cumhuriyet"]),
+]
+
+
+def match_fixed_product(name: str) -> str | None:
+    lower = name.lower()
+    if "adet" in lower:
+        return None
+    for product_name, keywords in FIXED_PRODUCT_KEYWORDS:
+        if any(kw in lower for kw in keywords):
+            return product_name
+    return None
+
+
+def resolve_product_id(seller_key: str, collector_type: str, item, product_map: dict[str, int]) -> int | None:
+    if collector_type == "marketplace_listing":
+        if seller_key == "n11_bilezik":
+            return product_map.get("22 Ayar Bilezik")
+        if seller_key == "n11_kulce_altin":
+            return product_map.get("Gram Altın")
+        # ziynet, sarrafiye, cumhuriyet
+        product_name = match_fixed_product(item.external_name)
+        return product_map.get(product_name) if product_name else None
+
+    product_name = BANK_PRODUCT_NAME_MAP.get(seller_key, {}).get(item.external_name)
+    return product_map.get(product_name) if product_name else None
+
 
 def run(external_job_id: int | None = None):
     db = DatabaseManager()
-
-   # C# (Scheduler) tetiklediyse kendi açtığı job_id'yi --job-id ile gönderir,
-    # biz onu kullanırız (ikinci bir satır açmayız). Elle/terminalden
-    # çalıştırıldığında (external_job_id=None) scraper kendi job'ını kendisi açar.
     job_id = external_job_id if external_job_id is not None else db.start_collection_job(job_type="Manual")
 
     processed = success = failed = 0
@@ -44,6 +96,8 @@ def run(external_job_id: int | None = None):
         db.complete_collection_job(job_id, 0, 0, 0)
         print(json.dumps({"processed": 0, "success": 0, "failed": 0}))
         return
+
+    product_map = db.get_product_name_to_id_map()
 
     try:
         for seller_key, seller_config in SELLERS.items():
@@ -62,7 +116,6 @@ def run(external_job_id: int | None = None):
                 continue
 
             if collector_type == "marketplace_listing":
-                # Çoklu satıcı: her item kendi Seller'ını (marka) taşıyor
                 price_unit = seller_config.get("price_unit", "total")
                 for item in scraped_items:
                     processed += 1
@@ -80,14 +133,16 @@ def run(external_job_id: int | None = None):
                             continue
                         price = round(price / gram, 2)
 
+                    product_id = resolve_product_id(seller_key, collector_type, item, product_map)
+
                     seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"])
                     sp_id = db.get_or_create_seller_product(
-                        seller_id, item.external_name, item.external_url, item.external_id
+                        seller_id, item.external_name, item.external_url, item.external_id,
+                        product_id=product_id
                     )
                     db.insert_price(sp_id, price, True, collection_job_id=job_id)
                     success += 1
             else:
-                # Tekil satıcı: sabit SELLER_ID_MAP (bankalar)
                 seller_id = SELLER_ID_MAP.get(seller_key)
                 if seller_id is None:
                     logger.error("'%s' için SELLER_ID_MAP'te eşleşen SellerId yok, atlanıyor.", seller_key)
@@ -101,8 +156,11 @@ def run(external_job_id: int | None = None):
                         failed += 1
                         continue
 
+                    product_id = resolve_product_id(seller_key, collector_type, item, product_map)
+
                     sp_id = db.get_or_create_seller_product(
-                        seller_id, item.external_name, item.external_url, item.external_id
+                        seller_id, item.external_name, item.external_url, item.external_id,
+                        product_id=product_id
                     )
                     db.insert_price(sp_id, price, True, collection_job_id=job_id)
                     success += 1
@@ -121,12 +179,10 @@ def run(external_job_id: int | None = None):
     if error_message:
         sys.exit(1)
 
+
 if __name__ == "__main__":
+    import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--job-id", type=int, default=None,
-        help="C# Scheduler'ın önceden açtığı CollectionJob Id'si. "
-             "Verilmezse scraper kendi job kaydını kendisi açar (manuel çalıştırma)."
-    )
+    parser.add_argument("--job-id", type=int, default=None)
     args = parser.parse_args()
     run(external_job_id=args.job_id)

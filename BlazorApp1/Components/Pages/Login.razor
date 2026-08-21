@@ -1,0 +1,56 @@
+﻿@page "/login"
+@using Altin_Fiyat_Takip_Analizi.Web.Models
+@using Altin_Fiyat_Takip_Analizi.Web.Services
+@inject ApiService Api
+@inject NavigationManager Nav
+
+<PageTitle>Giriş Yap</PageTitle>
+
+<div class="login-container">
+    <h1>Altın Fiyat Takip Analizi</h1>
+
+    <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
+        <div class="form-group">
+            <label>Kullanıcı Adı</label>
+            <InputText @bind-Value="_loginModel.Username" class="form-control" />
+        </div>
+        <div class="form-group">
+            <label>Şifre</label>
+            <InputText @bind-Value="_loginModel.Password" type="password" class="form-control" />
+        </div>
+
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <p class="error-message">@_errorMessage</p>
+        }
+
+        <button type="submit" class="btn-primary" disabled="@_isLoading">
+            @(_isLoading ? "Giriş yapılıyor..." : "Giriş Yap")
+        </button>
+    </EditForm>
+</div>
+
+@code {
+    private LoginDto _loginModel = new();
+    private string? _errorMessage;
+    private bool _isLoading;
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = null;
+
+        var result = await Api.PostAsync<LoginDto, AuthResponseDto>("api/v1/auth/login", _loginModel);
+
+        if (result is null)
+        {
+            _errorMessage = "Kullanıcı adı veya şifre hatalı.";
+            _isLoading = false;
+            return;
+        }
+
+        Api.SetToken(result.Token);
+        Api.SetCurrentUser(result.Username, result.Role);
+        Nav.NavigateTo("/", forceLoad: false);
+    }
+}

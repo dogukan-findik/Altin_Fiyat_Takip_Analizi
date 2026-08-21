@@ -7,4 +7,6 @@ public interface IPriceComparisonService
 {
     Task<PriceComparisonDto> ComparePricesAsync(int productId, SellerType? sellerType = null);
     Task<List<PriceComparisonDto>> GetAllComparisonsAsync(SellerType? sellerType = null);
+
+    Task<List<ProductSellerBreakdownDto>> GetSellerBreakdownAsync(SellerType sellerType);
 }

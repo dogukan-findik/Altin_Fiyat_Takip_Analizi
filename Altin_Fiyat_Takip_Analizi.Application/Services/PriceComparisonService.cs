@@ -1,9 +1,8 @@
-﻿using Altin_Fiyat_Takip_Analizi.Domain.Entities;
-using Altin_Fiyat_Takip_Analizi.Domain.Enums;
-using Altin_Fiyat_Takip_Analizi.Application.DTOs;
+﻿using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Exceptions;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
+using Altin_Fiyat_Takip_Analizi.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
 namespace Altin_Fiyat_Takip_Analizi.Application.Services;
@@ -12,17 +11,32 @@ public class PriceComparisonService : IPriceComparisonService
 {
     private readonly IRepository<PriceHistory> _priceRepo;
     private readonly IRepository<Product> _productRepo;
+    private readonly IRepository<OwnPriceBySource> _ownPriceRepo;
+    private readonly IRepository<Seller> _sellerRepo;
 
-    public PriceComparisonService(IRepository<PriceHistory> priceRepo, IRepository<Product> productRepo)
+
+    public PriceComparisonService(
+        IRepository<PriceHistory> priceRepo,
+        IRepository<Product> productRepo,
+        IRepository<OwnPriceBySource> ownPriceRepo,
+        IRepository<Seller> sellerRepo)
     {
         _priceRepo = priceRepo;
         _productRepo = productRepo;
+        _ownPriceRepo = ownPriceRepo;
+        _sellerRepo = sellerRepo;
     }
 
     public async Task<PriceComparisonDto> ComparePricesAsync(int productId, SellerType? sellerType = null)
     {
         var product = await _productRepo.GetByIdAsync(productId)
             ?? throw new NotFoundException($"Ürün bulunamadı: {productId}");
+
+        // sellerType belirtildiyse o kaynağa özel OurPrice'ı kullan,
+        // bulunamazsa (henüz senkronize edilmemişse) Product.OurPrice'a düş.        
+        var sourcePrice = await _ownPriceRepo.GetQueryable()
+            .FirstOrDefaultAsync(o => o.ProductId == productId && o.SourceType == SellerType.Bank);
+        decimal ourPrice = sourcePrice?.Price ?? product.OurPrice; // son çare olarak eski donuk kolon
 
         var last24h = DateTime.UtcNow.AddHours(-24);
 
@@ -47,7 +61,7 @@ public class PriceComparisonService : IPriceComparisonService
             {
                 ProductId = productId,
                 ProductName = product.Name,
-                OurPrice = product.OurPrice,
+                OurPrice = ourPrice,
                 CalculatedAt = DateTime.UtcNow
             };
         }
@@ -60,13 +74,13 @@ public class PriceComparisonService : IPriceComparisonService
         {
             ProductId = productId,
             ProductName = product.Name,
-            OurPrice = product.OurPrice,
+            OurPrice = ourPrice,
             CompetitorAvgPrice = avgPrice,
             MinPrice = minPrice.Price,
             MinPriceSeller = minPrice.SellerProduct.Seller.Name,
             MaxPrice = maxPrice.Price,
             MaxPriceSeller = maxPrice.SellerProduct.Seller.Name,
-            DiffFromAvg = product.OurPrice - avgPrice,
+            DiffFromAvg = ourPrice - avgPrice,
             CalculatedAt = DateTime.UtcNow
         };
     }
@@ -81,4 +95,59 @@ public class PriceComparisonService : IPriceComparisonService
 
         return results;
     }
+
+    public async Task<List<ProductSellerBreakdownDto>> GetSellerBreakdownAsync(SellerType sellerType)
+    {
+        var products = (await _productRepo.GetAllAsync()).Where(p => p.IsActive).ToList();
+        var sellers = await _sellerRepo.GetQueryable()
+            .Where(s => s.Type == sellerType && s.IsActive)
+            .ToListAsync();
+
+        var last24h = DateTime.UtcNow.AddHours(-24);
+
+        var latestPrices = await _priceRepo.GetQueryable()
+            .Include(p => p.SellerProduct)
+            .Where(p => p.CollectedAt >= last24h
+                        && p.IsAvailable
+                        && p.SellerProduct.Seller.Type == sellerType
+                        && p.SellerProduct.ProductId != null)
+            .GroupBy(p => new { p.SellerProduct.SellerId, p.SellerProduct.ProductId })
+            .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
+            .ToListAsync();
+
+        var result = new List<ProductSellerBreakdownDto>();
+
+        foreach (var product in products)
+        {
+            var sourcePrice = await _ownPriceRepo.GetQueryable()
+                .FirstOrDefaultAsync(o => o.ProductId == product.Id && o.SourceType == SellerType.Bank);
+            var ourPrice = sourcePrice?.Price ?? product.OurPrice;
+
+            var dto = new ProductSellerBreakdownDto
+            {
+                ProductId = product.Id,
+                ProductName = product.Name,
+                OurPrice = ourPrice
+            };
+
+            foreach (var seller in sellers)
+            {
+                var match = latestPrices.FirstOrDefault(p =>
+                    p.SellerProduct.SellerId == seller.Id && p.SellerProduct.ProductId == product.Id);
+
+                dto.SellerPrices.Add(new SellerPriceEntryDto
+                {
+                    SellerId = seller.Id,
+                    SellerName = seller.Name,
+                    Price = match?.Price,
+                    DiffFromOurs = match is not null ? ourPrice - match.Price : null
+                });
+            }
+
+            result.Add(dto);
+        }
+
+        return result;
+    }
+
 }

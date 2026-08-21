@@ -1,0 +1,65 @@
+﻿@page "/pazaryeri-karsilastirma"
+@using Altin_Fiyat_Takip_Analizi.Web.Models
+@using Altin_Fiyat_Takip_Analizi.Web.Services
+@inject ApiService Api
+@inject NavigationManager Nav
+
+<PageTitle>Pazaryeri Karşılaştırma</PageTitle>
+
+<h1>N11 Pazaryeri Altın Fiyatları Karşılaştırması</h1>
+
+@if (!Api.IsAuthenticated)
+{
+    <p><em>Bu sayfayı görüntülemek için giriş yapmalısınız.</em></p>
+}
+else if (_breakdown is null)
+{
+    <p><em>Yükleniyor...</em></p>
+}
+else if (_breakdown.Count == 0)
+{
+    <p>Henüz karşılaştırma verisi yok.</p>
+}
+else
+{
+    @foreach (var product in _breakdown)
+    {
+        <h3>@product.ProductName — Bizim Fiyatımız: @product.OurPrice.ToString("N2") TL</h3>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Satıcı</th>
+                    <th>Fiyat</th>
+                    <th>Farkımız</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sp in product.SellerPrices)
+                {
+                    <tr>
+                        <td>@sp.SellerName</td>
+                        <td>@(sp.Price.HasValue? sp.Price.Value.ToString("N2") + " TL" : "—")</td>
+                        <td class="@(sp.DiffFromOurs is > 0 ? "text-danger" : sp.DiffFromOurs is < 0 ? "text-success" : "")">
+                            @(sp.DiffFromOurs.HasValue? sp.DiffFromOurs.Value.ToString("N2") + " TL" : "—")
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+}
+
+@code {
+    private List<ProductSellerBreakdownDto>? _breakdown;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Api.IsAuthenticated)
+        {
+            Nav.NavigateTo("/login");
+            return;
+        }
+
+        _breakdown = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=MarketPlace");
+    }
+}

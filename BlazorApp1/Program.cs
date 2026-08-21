@@ -2,9 +2,16 @@ using Altin_Fiyat_Takip_Analizi.Web.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddHttpClient<Altin_Fiyat_Takip_Analizi.Web.Services.ApiService>(client =>
+builder.Services.AddHttpClient("AltinFiyatApiClient", client =>
 {
-    client.BaseAddress = new Uri("https://localhost:7268/"); // API'nin gerçek portu neyse onu yaz
+    client.BaseAddress = new Uri("https://localhost:7268/");
+});
+
+builder.Services.AddScoped<Altin_Fiyat_Takip_Analizi.Web.Services.ApiService>(sp =>
+{
+    var factory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = factory.CreateClient("AltinFiyatApiClient");
+    return new Altin_Fiyat_Takip_Analizi.Web.Services.ApiService(httpClient);
 });
 
 // Add services to the container.

@@ -47,29 +47,43 @@ class DatabaseManager:
             conn.commit()
 
     def get_or_create_seller_product(self, seller_id: int, external_name: str,
-                                       external_url: str, external_id: str | None) -> int:
-        """SellerProducts'ta bu external_id daha önce görülmüş mü kontrol eder,
-        yoksa yeni (eşleşmemiş) kayıt açar. Var olan ID'yi döner."""
+                                   external_url: str, external_id: str | None,
+                                   product_id: int | None = None) -> int:
+        """SellerProducts'ta bu external_id daha önce görülmüş mü kontrol eder.
+        product_id verildiyse (biliniyorsa) ve satır ya yeni ya da hâlâ
+        eşleşmemişse (ProductId NULL), doğrudan doğru ürüne bağlar — artık
+        ayrı bir auto-match adımına bağımlı değiliz."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "SELECT Id FROM SellerProducts WHERE SellerId = ? AND ExternalId = ?",
+                "SELECT Id, ProductId FROM SellerProducts WHERE SellerId = ? AND ExternalId = ?",
                 seller_id, external_id
             )
             row = cursor.fetchone()
-            if row:
-                cursor.execute(
-                    "UPDATE SellerProducts SET LastCollectedAt = GETUTCDATE() WHERE Id = ?",
-                    row[0]
-                )
-                conn.commit()
-                return row[0]
 
+            if row:
+                sp_id, existing_product_id = row
+                if product_id is not None and existing_product_id is None:
+                    cursor.execute(
+                        "UPDATE SellerProducts SET ProductId = ?, IsMatched = 1, MatchConfidence = 100, "
+                        "LastCollectedAt = GETUTCDATE() WHERE Id = ?",
+                        product_id, sp_id
+                    )
+                else:
+                    cursor.execute(
+                        "UPDATE SellerProducts SET LastCollectedAt = GETUTCDATE() WHERE Id = ?",
+                        sp_id
+                    )
+                conn.commit()
+                return sp_id
+
+            is_matched = product_id is not None
             cursor.execute(
-                "INSERT INTO SellerProducts (SellerId, ExternalName, ExternalUrl, ExternalId, "
-                "IsMatched, IsActive, LastCollectedAt, CreatedAt) "
-                "OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, 0, 1, GETUTCDATE(), GETUTCDATE())",
-                seller_id, external_name, external_url, external_id
+                "INSERT INTO SellerProducts (SellerId, ProductId, ExternalName, ExternalUrl, ExternalId, "
+                "IsMatched, MatchConfidence, IsActive, LastCollectedAt, CreatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, ?, ?, 1, GETUTCDATE(), GETUTCDATE())",
+                seller_id, product_id, external_name, external_url, external_id,
+                1 if is_matched else 0, 100 if is_matched else None
             )
             new_id = cursor.fetchone()[0]
             conn.commit()
@@ -86,24 +100,38 @@ class DatabaseManager:
             )
             conn.commit()
     
-    def update_own_price(self, product_name: str, price: float) -> int:
-        """Products.OurPrice'ı doğrudan günceller — SellerProduct/PriceHistory
-        akışına HİÇ dokunmaz, tamamen bağımsız bir güncelleme. Etkilenen satır
-        sayısını döner (0 ise o isimde ürün yok demektir)."""
-        logger.info("update_own_price çağrıldı: product_name=%r, price=%r (tip: %s)",
-                product_name, price, type(price).__name__)
+    def update_own_price(self, product_name: str, price: float, source_type: str = "Bank") -> int:
+        """OwnPriceBySource tablosuna (ProductId, SourceType) bazında upsert yapar.
+        source_type C#'daki SellerType enum string karşılığı olmalı: 'Bank' veya 'Marketplace'."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            try:
-                cursor.execute(
-                    "UPDATE Products SET OurPrice = ? WHERE Name = ?",
-                    price, product_name
+
+            cursor.execute("SELECT Id FROM Products WHERE Name = ?", product_name)
+            row = cursor.fetchone()
+            if not row:
+                return 0
+            product_id = row[0]
+
+            cursor.execute(
+                "SELECT Id FROM OwnPriceBySource WHERE ProductId = ? AND SourceType = ?",
+                product_id, source_type
             )
-            except Exception:
-                logger.exception("UPDATE sorgusu execute() sırasında hata verdi.")
-                raise
+            existing = cursor.fetchone()
+
+            if existing:
+                cursor.execute(
+                    "UPDATE OwnPriceBySource SET Price = ?, UpdatedAt = GETUTCDATE() WHERE Id = ?",
+                    price, existing[0]
+                )
+            else:
+                cursor.execute(
+                    "INSERT INTO OwnPriceBySource (ProductId, SourceType, Price, UpdatedAt) "
+                    "VALUES (?, ?, ?, GETUTCDATE())",
+                    product_id, source_type, price
+                )
+
             conn.commit()
-            return cursor.rowcount
+            return 1
 
     def get_or_create_seller(self, name: str, website_url: str | None = None) -> int:
         """Sellers tablosunda isimle arar, yoksa oluşturur. Pazaryeri
@@ -123,4 +151,12 @@ class DatabaseManager:
             new_id = cursor.fetchone()[0]
             conn.commit()
             return new_id
+
+    def get_product_name_to_id_map(self) -> dict[str, int]:
+        """Products tablosundaki isim -> Id eşlemesini döner. run() başında
+        bir kez çağrılıp, tüm scrape döngüsü boyunca cache olarak kullanılır."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Id, Name FROM Products")
+            return {row[1]: row[0] for row in cursor.fetchall()}
 

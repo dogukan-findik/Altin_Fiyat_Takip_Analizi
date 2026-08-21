@@ -8,6 +8,19 @@ public class ApiService
     private readonly HttpClient _http;
     private string? _token;
 
+    public event Action? AuthStateChanged;
+
+    public string? CurrentUsername { get; private set; }
+    public string? CurrentRole { get; private set; }
+
+    public void SetCurrentUser(string username, string role)
+    {
+        CurrentUsername = username;
+        CurrentRole = role;
+        AuthStateChanged?.Invoke();
+    }
+    
+
     public ApiService(HttpClient http)
     {
         _http = http;
@@ -19,12 +32,16 @@ public class ApiService
     {
         _token = token;
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        AuthStateChanged?.Invoke();
     }
 
     public void ClearToken()
     {
         _token = null;
         _http.DefaultRequestHeaders.Authorization = null;
+        CurrentUsername = null;
+        CurrentRole = null;
+        AuthStateChanged?.Invoke();
     }
 
     public async Task<T?> GetAsync<T>(string endpoint)

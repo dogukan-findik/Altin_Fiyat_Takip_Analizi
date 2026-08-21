@@ -70,5 +70,9 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<List<PriceComparisonDto>>> CompareAll([FromQuery] SellerType? sellerType = null)
     => Ok(await _comparisonService.GetAllComparisonsAsync(sellerType));
 
+    [HttpGet("seller-breakdown")]
+    public async Task<ActionResult<List<ProductSellerBreakdownDto>>> SellerBreakdown([FromQuery] SellerType sellerType)
+    => Ok(await _comparisonService.GetSellerBreakdownAsync(sellerType));
+
 }
 

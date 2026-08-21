@@ -34,7 +34,7 @@ SELLERS: dict = {
             "SGLDC": "Çeyrek Altın",
             "SGLDY": "Yarım Altın",
             "SGZIYNET": "Tam Altın",
-            "SCUM": "Cumhuriyet Altını",
+            
         },
     },
     "qnb": {

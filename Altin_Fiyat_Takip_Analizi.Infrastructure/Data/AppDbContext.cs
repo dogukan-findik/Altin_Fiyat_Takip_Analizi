@@ -16,6 +16,7 @@ public class AppDbContext : DbContext
     public DbSet<DailyReport> DailyReports => Set<DailyReport>();
     public DbSet<PriceAlert> PriceAlerts => Set<PriceAlert>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<OwnPriceBySource> OwnPriceBySources => Set<OwnPriceBySource>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
