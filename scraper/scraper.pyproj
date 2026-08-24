@@ -43,9 +43,13 @@
     <Compile Include="database.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="filters\init.py" />
+    <Compile Include="filters\product_filter.py" />
     <Compile Include="main.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="matchers\init.py" />
+    <Compile Include="matchers\product_matcher.py" />
     <Compile Include="models.py">
       <SubType>Code</SubType>
     </Compile>
@@ -62,12 +66,17 @@
     <Compile Include="utils\retry.py">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="validators\init.py" />
+    <Compile Include="validators\price_validator.py" />
     <Compile Include="__init__.py">
       <SubType>Code</SubType>
     </Compile>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="collectors\" />
+    <Folder Include="matchers\" />
+    <Folder Include="filters\" />
+    <Folder Include="validators\" />
     <Folder Include="utils\" />
     <Folder Include="parsers\" />
   </ItemGroup>

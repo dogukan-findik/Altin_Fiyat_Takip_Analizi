@@ -3,9 +3,11 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<div class="top-row ps-3 navbar navbar-dark">
+<div class="top-row ps-3 navbar navbar-dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">Altın Fiyat Takip</a>
+        <a class="navbar-brand fw-bold" href="" style="font-size: 1.3rem;">
+            <span style="font-size: 1.5rem; margin-right: 0.5rem;">💰</span>Altın Fiyat Takip
+        </a>
     </div>
 </div>
 
@@ -15,27 +17,46 @@
     <nav class="flex-column">
         @if (Api.IsAuthenticated)
         {
+            <div class="nav-item px-3 pt-2">
+                <NavLink class="nav-link" href="">
+                    <span class="me-2">🏠</span> Anasayfa
+                </NavLink>
+            </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="banka-karsilastirma">
-                    Banka Karşılaştırma
+                    <span class="me-2">🏦</span> Banka Karşılaştırma
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="pazaryeri-karsilastirma">
-                    Pazaryeri Karşılaştırma
+                    <span class="me-2">🏪</span> N11 Pazaryeri
                 </NavLink>
             </div>
+            
+            <hr style="margin: 1rem 0; opacity: 0.3;" />
+            
             <div class="nav-item px-3">
-                <span class="nav-link">@Api.CurrentUsername (@Api.CurrentRole)</span>
+                <div class="nav-link text-muted" style="cursor: default; padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.9rem;">
+                    <span class="me-2">👤</span>
+                    <strong>@Api.CurrentUsername</strong>
+                </div>
+                <div class="nav-link text-muted" style="cursor: default; padding-top: 0.25rem; padding-bottom: 0.5rem; font-size: 0.85rem;">
+                    <span class="me-2">🔑</span> @Api.CurrentRole
+                </div>
             </div>
+            
             <div class="nav-item px-3">
-                <button class="nav-link btn btn-link" @onclick="HandleLogout">Çıkış Yap</button>
+                <button class="nav-link btn btn-link text-danger w-100 text-start" @onclick="HandleLogout" style="font-weight: 600;">
+                    <span class="me-2">🚪</span> Çıkış Yap
+                </button>
             </div>
         }
         else
         {
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="login">Giriş Yap</NavLink>
+            <div class="nav-item px-3 pt-2">
+                <NavLink class="nav-link" href="login">
+                    <span class="me-2">🔓</span> Giriş Yap
+                </NavLink>
             </div>
         }
     </nav>

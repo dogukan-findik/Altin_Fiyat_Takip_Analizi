@@ -74,5 +74,9 @@ public class ProductsController : ControllerBase
     public async Task<ActionResult<List<ProductSellerBreakdownDto>>> SellerBreakdown([FromQuery] SellerType sellerType)
     => Ok(await _comparisonService.GetSellerBreakdownAsync(sellerType));
 
+    [HttpGet("seller-product-breakdown")]
+    public async Task<ActionResult<List<SellerProductBreakdownDto>>> SellerProductBreakdown([FromQuery] SellerType sellerType)
+    => Ok(await _comparisonService.GetSellerProductBreakdownAsync(sellerType));
+
 }
 

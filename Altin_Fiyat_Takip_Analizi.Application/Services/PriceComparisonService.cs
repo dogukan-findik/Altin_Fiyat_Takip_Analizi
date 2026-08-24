@@ -150,4 +150,88 @@ public class PriceComparisonService : IPriceComparisonService
         return result;
     }
 
+    public async Task<List<SellerProductBreakdownDto>> GetSellerProductBreakdownAsync(SellerType sellerType)
+    {
+        var sellers = await _sellerRepo.GetQueryable()
+            .Where(s => s.Type == sellerType && s.IsActive)
+            .ToListAsync();
+
+        var last24h = DateTime.UtcNow.AddHours(-24);
+
+        // Son 24 saat içindeki tüm fiyatları çek (her sellerProduct için en son fiyat)
+        var latestPrices = await _priceRepo.GetQueryable()
+            .Include(p => p.SellerProduct)
+                .ThenInclude(sp => sp.Seller)
+            .Include(p => p.SellerProduct)
+                .ThenInclude(sp => sp.Product)
+            .Where(p => p.CollectedAt >= last24h
+                        && p.IsAvailable
+                        && p.SellerProduct.Seller.Type == sellerType
+                        && p.SellerProduct.ProductId != null
+                        && p.SellerProduct.IsMatched)
+            .GroupBy(p => p.SellerProductId)
+            .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
+            .ToListAsync();
+
+        // OwnPrice'ları toplu çek
+        var ownPrices = await _ownPriceRepo.GetQueryable()
+            .Where(o => o.SourceType == SellerType.Bank)
+            .ToListAsync();
+
+        // Products'ı toplu çek (fallback OurPrice için)
+        var products = (await _productRepo.GetAllAsync()).Where(p => p.IsActive).ToDictionary(p => p.Id);
+
+        var result = new List<SellerProductBreakdownDto>();
+
+        foreach (var seller in sellers)
+        {
+            var sellerPrices = latestPrices
+                .Where(p => p.SellerProduct.SellerId == seller.Id)
+                .OrderBy(p => p.SellerProduct.Product?.Name)
+                .ToList();
+
+            if (!sellerPrices.Any()) continue;
+
+            var dto = new SellerProductBreakdownDto
+            {
+                SellerId = seller.Id,
+                SellerName = seller.Name
+            };
+
+            foreach (var ph in sellerPrices)
+            {
+                var productId = ph.SellerProduct.ProductId!.Value;
+                var product = products.GetValueOrDefault(productId);
+                if (product == null) continue;
+
+                // Bizim fiyatımız: önce OwnPriceBySource, yoksa Product.OurPrice
+                var ownPrice = ownPrices.FirstOrDefault(o => o.ProductId == productId);
+                var ourPrice = ownPrice?.Price ?? product.OurPrice;
+
+                var diff = ourPrice - ph.Price;
+                var diffPercent = ph.Price != 0 ? (diff / ph.Price) * 100 : 0;
+
+                dto.Products.Add(new SellerProductComparisonDto
+                {
+                    SellerProductId = ph.SellerProduct.Id,
+                    SellerName = seller.Name,
+                    ExternalProductName = ph.SellerProduct.ExternalName,
+                    ExternalUrl = ph.SellerProduct.ExternalUrl,
+                    SellerPrice = ph.Price,
+                    MatchedProductId = productId,
+                    MatchedProductName = product.Name,
+                    OurPrice = ourPrice,
+                    PriceDiff = diff,
+                    PriceDiffPercent = Math.Round(diffPercent, 2),
+                    CollectedAt = ph.CollectedAt
+                });
+            }
+
+            if (dto.Products.Any())
+                result.Add(dto);
+        }
+
+        return result;
+    }
+
 }

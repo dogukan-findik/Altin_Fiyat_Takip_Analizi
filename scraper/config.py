@@ -65,7 +65,9 @@ SELLERS: dict = {
         "collector_type": "marketplace_listing",
         "exclude_brand_contains": ["ahlatcı", "ahlatci"],
         "fetch_seller_from_detail": True,
-        "detail_seller_selector": "a.sidebarSellerArea-top-name",  # <-- artık burada       
+        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "max_pages": None,  # None = tüm sayfalar, test için düşük sayı (örn: 3) kullanılabilir
+        "page_delay_seconds": 2,  # Sayfalar arası bekleme süresi (saniye)
         "known_brands": [
             "Sevim Gold", "Tuğrul Kuyumculuk", "Maxigold Kuyumculuk", "Aurex", "Kavafzade",
             "Özbağ", "Agakulche", "Nadir Gold", "Rekor", "Fiyonk Kuyumculuk", "Archin",
@@ -78,7 +80,6 @@ SELLERS: dict = {
             "card": "a.product-item",
             "name": "h2.product-item-title",
             "price": "h3.price-currency",
-         
         },
     },
     "n11_bilezik": {
@@ -87,9 +88,10 @@ SELLERS: dict = {
         "collector_type": "marketplace_listing",
         "exclude_brand_contains": ["ahlatcı", "ahlatci"],
         "exclude_title_contains": ["adet"],  # çoklu paket, tekil gram fiyatı bozar
-        "price_unit": "per_gram",
         "fetch_seller_from_detail": True,
         "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "max_pages": 10,  # 10 sayfa ~ 480 ürün (daha fazla veri için artırılabilir)
+        "page_delay_seconds": 2,
         "known_brands": [],
         "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
     },
@@ -99,9 +101,10 @@ SELLERS: dict = {
         "collector_type": "marketplace_listing",
         "exclude_brand_contains": ["ahlatcı", "ahlatci"],
         "exclude_title_contains": ["adet"],
-        "price_unit": "per_gram",
         "fetch_seller_from_detail": True,
         "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "max_pages": 5,
+        "page_delay_seconds": 2,
         "known_brands": [],
         "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
     },
@@ -113,17 +116,8 @@ SELLERS: dict = {
         "exclude_title_contains": ["adet"],
         "fetch_seller_from_detail": True,
         "detail_seller_selector": "a.sidebarSellerArea-top-name",
-        "known_brands": [],
-        "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
-    },
-    "n11_sarrafiye": {
-        "name": "N11 Sarrafiyeli Takılar",
-        "base_url": "https://www.n11.com/altin-ve-gumus/koleksiyon-altin",
-        "collector_type": "marketplace_listing",
-        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
-        "exclude_title_contains": ["adet"],  # "2 Adet Eski Tarihli" gibi çoklu paketler
-        "fetch_seller_from_detail": True,
-        "detail_seller_selector": "a.sidebarSellerArea-top-name",
+        "max_pages": 5,
+        "page_delay_seconds": 2,
         "known_brands": [],
         "selectors": {"card": "a.product-item", "name": "h2.product-item-title", "price": "h3.price-currency"},
     },

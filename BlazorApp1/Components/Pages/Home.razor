@@ -1,7 +1,177 @@
 ﻿@page "/"
+@using Altin_Fiyat_Takip_Analizi.Web.Services
+@inject ApiService Api
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Anasayfa</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
+    @if (!Api.IsAuthenticated)
+    {
+        <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-lg" style="border-radius: 16px;">
+                    <div class="card-body p-5 text-center">
+                        <div style="font-size: 4rem; margin-bottom: 1.5rem;">💰</div>
+                        <h1 class="fw-bold mb-2">Altın Fiyat Takip Analizi</h1>
+                        <p class="text-muted fs-5 mb-4">
+                            Banka ve pazaryeri altın fiyatlarını gerçek zamanlı olarak takip edin, 
+                            karşılaştırın ve analiz edin.
+                        </p>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <div class="py-3">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏦</div>
+                                    <h5 class="fw-bold mb-1">Banka Karşılaştırma</h5>
+                                    <p class="text-muted small">QNB, Garanti, Yapı Kredi fiyatları</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="py-3">
+                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏪</div>
+                                    <h5 class="fw-bold mb-1">N11 Pazaryeri</h5>
+                                    <p class="text-muted small">Ürün bazlı fiyat karşılaştırma</p>
+                                </div>
+                            </div>
+                        </div>
 
-Welcome to your new app.
+                        <button class="btn btn-primary btn-lg w-100" @onclick="GoToLogin" style="border-radius: 8px; padding: 0.75rem 2rem; font-weight: 600;">
+                            🔓 Giriş Yap
+                        </button>
+                        <p class="text-muted small mt-3 mb-0">Lütfen giriş yaparak devam edin</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-5">
+                    <div>
+                        <h2 class="text-white fw-bold mb-1">
+                            👋 Hoş geldin, @Api.CurrentUsername!
+                        </h2>
+                        <p class="text-white opacity-75">Altın fiyat takip sistemine hoş geldiniz</p>
+                    </div>
+                    <div style="font-size: 3rem;">📊</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;" 
+                     @onclick="GoToBank"
+                     onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.2)'"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
+                    <div class="card-body p-4 text-white" style="border-radius: 12px;">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏦</div>
+                        <h3 class="fw-bold mb-2">Banka Karşılaştırma</h3>
+                        <p class="mb-0 opacity-85">
+                            QNB Finans, Garanti BBVA ve Yapı Kredi bankalarının altın fiyatlarını 
+                            bizim fiyatlarımızla karşılaştırın.
+                        </p>
+                        <div class="mt-3">
+                            <small class="opacity-75">Tıkla → Karşılaştırmaya Git</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                     @onclick="GoToMarketplace"
+                     onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.2)'"
+                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
+                    <div class="card-body p-4 text-white" style="border-radius: 12px;">
+                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏪</div>
+                        <h3 class="fw-bold mb-2">N11 Pazaryeri</h3>
+                        <p class="mb-0 opacity-85">
+                            N11'deki tüm satıcıların ürünlerini ürün bazında karşılaştırın. 
+                            Hangi satıcılar daha ucuz, hangisi daha pahalı görmek için tıklayın.
+                        </p>
+                        <div class="mt-3">
+                            <small class="opacity-75">Tıkla → Karşılaştırmaya Git</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); border-radius: 12px;">
+                    <div class="card-body p-4">
+                        <h5 class="fw-bold mb-3">ℹ️ Sistemimiz Hakkında</h5>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <h6 class="fw-bold text-primary">🔄 Gerçek Zamanlı Veri</h6>
+                                    <p class="text-muted small mb-0">
+                                        Fiyatlar her saat otomatik olarak güncellenir. 
+                                        En güncel bilgileri her zaman görebilirsiniz.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <h6 class="fw-bold text-success">📊 Kapsamlı Analiz</h6>
+                                    <p class="text-muted small mb-0">
+                                        Banka ve pazaryeri fiyatlarını paralel olarak takip edin. 
+                                        Trendi kolaylıkla görebilirsiniz.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <h6 class="fw-bold text-danger">🎯 Hedef Stratejisi</h6>
+                                    <p class="text-muted small mb-0">
+                                        Gram bazında fiyat karşılaştırması yaparak en iyi alımı yapın. 
+                                        Bilezik ve barları kendi fiyatlarımızla karşılaştırın.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-12 text-center">
+                <p class="text-white opacity-75 small">
+                    Son Güncelleme: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") | 
+                    Kullanıcı Rolü: <strong>@Api.CurrentRole</strong>
+                </p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Api.IsAuthenticated)
+        {
+            StateHasChanged();
+        }
+    }
+
+    private void GoToLogin()
+    {
+        Nav.NavigateTo("/login");
+    }
+
+    private void GoToBank()
+    {
+        Nav.NavigateTo("/banka-karsilastirma");
+    }
+
+    private void GoToMarketplace()
+    {
+        Nav.NavigateTo("/pazaryeri-karsilastirma");
+    }
+}

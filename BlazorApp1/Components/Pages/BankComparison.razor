@@ -6,51 +6,189 @@
 
 <PageTitle>Banka Karşılaştırma</PageTitle>
 
-<h1>Banka Altın Fiyatları Karşılaştırması</h1>
+<div class="container-fluid py-3">
+    <div class="d-flex align-items-center mb-4">
+        <span style="font-size:2rem" class="me-3">🏦</span>
+        <div>
+            <h2 class="mb-0 fw-bold">Banka Altın Fiyatları</h2>
+            <p class="text-muted mb-0">QNB Finans, Garanti ve Yapı Kredi bankalarının altın fiyatları, bizim fiyatlarımızla karşılaştırılıyor.</p>
+        </div>
+    </div>
 
-@if (!Api.IsAuthenticated)
-{
-    <p><em>Bu sayfayı görüntülemek için giriş yapmalısınız.</em></p>
-}
-else if (_breakdown is null)
-{
-    <p><em>Yükleniyor...</em></p>
-}
-else if (_breakdown.Count == 0)
-{
-    <p>Henüz karşılaştırma verisi yok.</p>
-}
-else
-{
-    @foreach (var product in _breakdown)
+    @if (!Api.IsAuthenticated)
     {
-        <h3>@product.ProductName — Bizim Fiyatımız: @product.OurPrice.ToString("N2") TL</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Banka</th>
-                    <th>Fiyat</th>
-                    <th>Farkımız</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var sp in product.SellerPrices)
-                {
-                    <tr>
-                        <td>@sp.SellerName</td>
-                        <td>@(sp.Price.HasValue? sp.Price.Value.ToString("N2") + " TL" : "—")</td>
-                        <td class="@(sp.DiffFromOurs is > 0 ? "text-danger" : sp.DiffFromOurs is < 0 ? "text-success" : "")">
-                            @(sp.DiffFromOurs.HasValue? sp.DiffFromOurs.Value.ToString("N2") + " TL" : "—")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="alert alert-warning d-flex align-items-center" role="alert">
+            <span class="me-2">🔒</span>
+            <span>Bu sayfayı görüntülemek için <a href="/login" class="alert-link">giriş yapmalısınız</a>.</span>
+        </div>
     }
-}
+    else if (_loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+            <p class="text-muted mt-3">Banka fiyatları yükleniyor...</p>
+        </div>
+    }
+    else if (_breakdown is null || _breakdown.Count == 0)
+    {
+        <div class="alert alert-info d-flex align-items-center">
+            <span class="me-2">ℹ️</span>
+            <span>Henüz banka karşılaştırma verisi bulunmuyor.</span>
+        </div>
+    }
+    else
+    {
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Biz Daha Ucuzuz</h6>
+                        <h2 class="fw-bold mb-0">@_cheaperCount</h2>
+                        <small class="opacity-75">ürün</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Biz Daha Pahalıyız</h6>
+                        <h2 class="fw-bold mb-0">@_expensiveCount</h2>
+                        <small class="opacity-75">ürün</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Veri Yok / Eşit</h6>
+                        <h2 class="fw-bold mb-0">@_equalCount</h2>
+                        <small class="opacity-75">ürün</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @foreach (var product in _breakdown)
+        {
+            var validPrices = product.SellerPrices.Where(sp => sp.Price.HasValue).ToList();
+            if (!validPrices.Any()) continue;
+
+            <div class="card mb-4 border-0 shadow-sm">
+                <div class="card-header border-0 d-flex justify-content-between align-items-center"
+                     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
+                    <div class="d-flex align-items-center">
+                        <span style="font-size:1.4rem" class="me-2">💰</span>
+                        <h5 class="mb-0 fw-bold">@product.ProductName</h5>
+                    </div>
+                    <div>
+                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+                            Bizim: @FormatPrice(product.OurPrice) ₺
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle">
+                            <thead style="background-color: #f8f9fa;">
+                                <tr>
+                                    <th class="ps-4" style="width: 35%">
+                                        <span class="text-muted">🏛️ Banka</span>
+                                    </th>
+                                    <th style="width: 25%" class="text-end">
+                                        <span class="text-muted">Banka Fiyatı</span>
+                                    </th>
+                                    <th style="width: 20%" class="text-end">
+                                        <span class="text-muted">Fark (TL)</span>
+                                    </th>
+                                    <th style="width: 20%" class="text-center">
+                                        <span class="text-muted">Durum</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var sp in product.SellerPrices.Where(sp => sp.Price.HasValue))
+                                {
+                                    var isOurCheaper = sp.DiffFromOurs.HasValue && sp.DiffFromOurs.Value > 0;
+                                    var isOurExpensive = sp.DiffFromOurs.HasValue && sp.DiffFromOurs.Value < 0;
+                                    var rowBg = isOurCheaper ? "background-color: rgba(40, 167, 69, 0.05);"
+                                              : isOurExpensive ? "background-color: rgba(220, 53, 69, 0.05);"
+                                              : "";
+
+                                    <tr style="@rowBg">
+                                        <td class="ps-4 fw-semibold">
+                                            <span class="me-2">🏦</span> @sp.SellerName
+                                        </td>
+                                        <td class="text-end fw-bold" style="font-size: 1.05rem;">
+                                            @FormatPrice(sp.Price.Value) ₺
+                                        </td>
+                                        <td class="text-end fw-bold @(isOurCheaper ? "text-success" : isOurExpensive ? "text-danger" : "text-muted")">
+                                            @if (sp.DiffFromOurs.HasValue)
+                                            {
+                                                <span>
+                                                    @(sp.DiffFromOurs.Value > 0 ? "+" : "")@FormatPrice(sp.DiffFromOurs.Value) ₺
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span>—</span>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            @if (isOurCheaper)
+                                            {
+                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #d4edda; color: #155724;">
+                                                    ✅ Biz Ucuzuz
+                                                </span>
+                                            }
+                                            else if (isOurExpensive)
+                                            {
+                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #f8d7da; color: #721c24;">
+                                                    ⚠️ Biz Pahalıyız
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge rounded-pill bg-secondary px-3 py-2">➖ Eşit</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
 
 @code {
     private List<ProductSellerBreakdownDto>? _breakdown;
+    private bool _loading = true;
+
+    // Sadece gerçek banka isimleri - diğer satıcılar banka sayfasında gösterilmeyecek
+    private static readonly HashSet<string> BankNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "QNB", "QNB Finans", "QNB Finansbank",
+        "Garanti", "Garanti BBVA", "Garanti Bankası",
+        "Yapı Kredi", "Yapıkredi", "YapıKredi", "Yapı Kredi Bankası",
+        "Ziraat", "Ziraat Bankası",
+        "İş Bankası", "Türkiye İş Bankası",
+        "Halkbank", "Halk Bankası",
+        "Vakıfbank", "VakıfBank",
+        "Akbank",
+        "Denizbank", "DenizBank",
+        "ING", "ING Bank",
+        "TEB", "Türk Ekonomi Bankası",
+        "HSBC",
+        "Kuveyt Türk", "KuveytTürk"
+    };
+
+    private int _cheaperCount;
+    private int _expensiveCount;
+    private int _equalCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,6 +198,36 @@ else
             return;
         }
 
-        _breakdown = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=Bank");
+        var raw = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=Bank");
+        
+        if (raw != null)
+        {
+            // Sadece banka isimlerini filtrele
+            foreach (var product in raw)
+            {
+                product.SellerPrices = product.SellerPrices
+                    .Where(sp => BankNames.Any(bn => sp.SellerName.Contains(bn, StringComparison.OrdinalIgnoreCase)))
+                    .ToList();
+            }
+            
+            _breakdown = raw;
+
+            // İstatistik hesapla
+            var allPrices = raw.SelectMany(p => p.SellerPrices).Where(sp => sp.DiffFromOurs.HasValue);
+            _cheaperCount = allPrices.Count(sp => sp.DiffFromOurs > 0);
+            _expensiveCount = allPrices.Count(sp => sp.DiffFromOurs < 0);
+            _equalCount = allPrices.Count(sp => sp.DiffFromOurs == 0);
+        }
+
+        _loading = false;
+    }
+
+    /// <summary>
+    /// Fiyatı Türkçe formatında gösterir: bin ayırıcı ile (2.599,50 TL)
+    /// </summary>
+    private string FormatPrice(decimal price)
+    {
+        var turkishCulture = new System.Globalization.CultureInfo("tr-TR");
+        return price.ToString("N2", turkishCulture);
     }
 }

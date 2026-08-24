@@ -43,3 +43,25 @@ public class ProductSellerBreakdownDto
     public decimal OurPrice { get; set; }
     public List<SellerPriceEntryDto> SellerPrices { get; set; } = new();
 }
+
+public class SellerProductComparisonDto
+{
+    public int SellerProductId { get; set; }
+    public string SellerName { get; set; } = string.Empty;
+    public string ExternalProductName { get; set; } = string.Empty;
+    public string? ExternalUrl { get; set; }
+    public decimal SellerPrice { get; set; }
+    public int? MatchedProductId { get; set; }
+    public string MatchedProductName { get; set; } = string.Empty;
+    public decimal OurPrice { get; set; }
+    public decimal PriceDiff { get; set; }
+    public decimal PriceDiffPercent { get; set; }
+    public DateTime CollectedAt { get; set; }
+}
+
+public class SellerProductBreakdownDto
+{
+    public int SellerId { get; set; }
+    public string SellerName { get; set; } = string.Empty;
+    public List<SellerProductComparisonDto> Products { get; set; } = new();
+}

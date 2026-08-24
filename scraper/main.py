@@ -1,13 +1,17 @@
 ﻿import sys
 import time
 import json
+import argparse
 from scraper.config import SELLERS, RATE_LIMIT_SECONDS
 from scraper.collectors.table_row_collector import TableRowCollector
 from scraper.collectors.table_row_playwright_collector import TableRowPlaywrightCollector
 from scraper.collectors.filtered_table_collector import FilteredTableCollector
 from scraper.collectors.filtered_table_playwright_collector import FilteredTablePlaywrightCollector
 from scraper.collectors.marketplace_listing_collector import MarketplaceListingCollector
-from scraper.parsers.gold_parser import parse_price, extract_gram_weight
+from scraper.parsers.gold_parser import parse_price, extract_gram_weight, categorize_gold_product
+from scraper.matchers.product_matcher import ProductMatcher
+from scraper.filters.product_filter import ProductFilter
+from scraper.validators.price_validator import PriceValidator
 from scraper.database import DatabaseManager
 from scraper.utils.logger import get_logger
 
@@ -25,13 +29,10 @@ SELLER_ID_MAP: dict[str, int] = {
     "garantibbva": 1,
     "qnb": 2,
     "yapikredi": 3,
-    # n11 kategorileri buraya girmiyor — her item kendi Seller'ını
-    # (mağaza adı) dinamik çözüyor, bkz. marketplace_listing dalı.
 }
 
-# Bankalarda ham isimden Product.Name'e statik eşleme — her banka kendi
-# formatında isim veriyor (Garanti: "Gram Altın", QNB: "ALTIN (GRAM)",
-# Yapı Kredi: "Gram"), tek bir ortak kural yazmak yerine açıkça eşliyoruz.
+# Bankalarda isim formatı sabit ve temiz olduğu için basit statik eşleme
+# yeterli — ProductMatcher'ın esnekliğine ihtiyaç yok.
 BANK_PRODUCT_NAME_MAP: dict[str, dict[str, str]] = {
     "garantibbva": {
         "Gram Altın": "Gram Altın",
@@ -49,39 +50,6 @@ BANK_PRODUCT_NAME_MAP: dict[str, dict[str, str]] = {
         "Tam": "Tam Altın",
     },
 }
-
-# N11'de Ziynet/Sarrafiye/Cumhuriyet kategorileri başlıkta kategori adı
-# geçiriyor, buradan Çeyrek/Yarım/Tam'a eşliyoruz. Cumhuriyet Altını'nı
-# bilinçli olarak Tam Altın'a eşliyoruz (yaklaşık eşdeğer, tam aynı değil).
-FIXED_PRODUCT_KEYWORDS = [
-    ("Çeyrek Altın", ["çeyrek"]),
-    ("Yarım Altın", ["yarım", "yarim"]),
-    ("Tam Altın", ["tam altın", "tam altin", "tam lira", "cumhuriyet"]),
-]
-
-
-def match_fixed_product(name: str) -> str | None:
-    lower = name.lower()
-    if "adet" in lower:
-        return None
-    for product_name, keywords in FIXED_PRODUCT_KEYWORDS:
-        if any(kw in lower for kw in keywords):
-            return product_name
-    return None
-
-
-def resolve_product_id(seller_key: str, collector_type: str, item, product_map: dict[str, int]) -> int | None:
-    if collector_type == "marketplace_listing":
-        if seller_key == "n11_bilezik":
-            return product_map.get("22 Ayar Bilezik")
-        if seller_key == "n11_kulce_altin":
-            return product_map.get("Gram Altın")
-        # ziynet, sarrafiye, cumhuriyet
-        product_name = match_fixed_product(item.external_name)
-        return product_map.get(product_name) if product_name else None
-
-    product_name = BANK_PRODUCT_NAME_MAP.get(seller_key, {}).get(item.external_name)
-    return product_map.get(product_name) if product_name else None
 
 
 def run(external_job_id: int | None = None):
@@ -116,38 +84,96 @@ def run(external_job_id: int | None = None):
                 continue
 
             if collector_type == "marketplace_listing":
-                price_unit = seller_config.get("price_unit", "total")
                 for item in scraped_items:
                     processed += 1
+
+                    # 1. Filtreleme: İstenmeyen ürünleri ayıkla
+                    excluded, reason = ProductFilter.should_exclude(item.external_name)
+                    if excluded:
+                        logger.info("Ürün filtrelendi: %s - Sebep: %s", item.external_name, reason)
+                        continue
+
+                    # 2. Temel ürün tipini belirle (22 Ayar Bilezik, Gram Altın vb.)
+                    base_product_name = ProductMatcher.match(item.external_name)
+                    if base_product_name is None:
+                        logger.warning("Ürün eşleştirilemedi, atlanıyor: %s", item.external_name)
+                        failed += 1
+                        continue
+
+                    # 3. Bilezikler için gram bazlı kategori oluştur
+                    #    (5 Gram Bilezik, 10 Gram Bilezik vb.)
+                    final_product_name = categorize_gold_product(item.external_name, base_product_name)
+
+                    # 4. Fiyatı parse et
                     price = parse_price(item.raw_price)
                     if price is None:
                         logger.warning("Fiyat parse edilemedi, atlanıyor: %s", item.external_name)
                         failed += 1
                         continue
 
-                    if price_unit == "per_gram":
+                    # 5. Gram bazlı ürünlerde gram bilgisini doğrula
+                    #    Fiyat işlemesi yapılmaz - toplam fiyat kaydedilir
+                    #    (Gram Altın ve Bilezik ikisi de toplam fiyatla kaydedilir)
+                    if ProductMatcher.is_gram_based(final_product_name):
                         gram = extract_gram_weight(item.external_name)
                         if gram is None or gram <= 0:
                             logger.warning("Gramaj çıkarılamadı, atlanıyor: %s", item.external_name)
                             failed += 1
                             continue
-                        price = round(price / gram, 2)
+                        
+                        logger.info("Gram bazlı ürün (toplam fiyat): %s (%.2f TL için %.1fg)",
+                                    item.external_name, price, gram)
 
-                    product_id = resolve_product_id(seller_key, collector_type, item, product_map)
+                    # 6. Fiyat validasyonu
+                    is_valid, warning = PriceValidator.validate(final_product_name, price)
+                    if not is_valid:
+                        logger.warning("Fiyat anomalisi: %s - %s", item.external_name, warning)
+                        # Reddetmiyoruz, sadece uyarıyoruz — kayıt devam eder.
 
-                    seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"])
+                    # 7. Ürünü veritabanına kaydet
+                    product_id = product_map.get(final_product_name)
+                    
+                    # Bilezik ve Gram Altın için otomatik ürün oluşturma
+                    if product_id is None and "Gram Bilezik" in final_product_name:
+                        product_id = db.ensure_bracelet_product(final_product_name)
+                        product_map[final_product_name] = product_id
+                    elif product_id is None and "Gram Altın" in final_product_name:
+                        product_id = db.ensure_gram_gold_product(final_product_name)
+                        product_map[final_product_name] = product_id
+                    
+                    if product_id is None:
+                        logger.warning(
+                            "'%s' Products tablosunda bulunamadı, atlanıyor.",
+                            final_product_name
+                        )
+                        failed += 1
+                        continue
+
+                    # Gram Altın için: eğer doğru gram kategorisi yoksa, 1 Gram fiyatıyla hesapla
+                    final_price = price
+                    if "Gram Altın" in final_product_name and product_id == product_map.get(final_product_name):
+                        # Eğer bu satırlara ulaşıldıysa, ürün ya var ya az önce oluşturuldu
+                        # Fiyat doğrudan N11'den geldiğinden, zaten toplam fiyat
+                        # Ancak eğer bizde olmayan bir gram varsa, 1g fiyatıyla hesapla
+                        pass  # Fiyat zaten doğru (toplam)
+
+                    seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"], seller_type="Marketplace")
                     sp_id = db.get_or_create_seller_product(
                         seller_id, item.external_name, item.external_url, item.external_id,
                         product_id=product_id
                     )
-                    db.insert_price(sp_id, price, True, collection_job_id=job_id)
+                    db.insert_price(sp_id, final_price, True, collection_job_id=job_id)
                     success += 1
+                    logger.info("Ürün kaydedildi: '%s' -> '%s' (%.2f TL)",
+                                item.external_name, final_product_name, final_price)
+
             else:
                 seller_id = SELLER_ID_MAP.get(seller_key)
                 if seller_id is None:
                     logger.error("'%s' için SELLER_ID_MAP'te eşleşen SellerId yok, atlanıyor.", seller_key)
                     continue
 
+                name_map = BANK_PRODUCT_NAME_MAP.get(seller_key, {})
                 for item in scraped_items:
                     processed += 1
                     price = parse_price(item.raw_price)
@@ -156,7 +182,8 @@ def run(external_job_id: int | None = None):
                         failed += 1
                         continue
 
-                    product_id = resolve_product_id(seller_key, collector_type, item, product_map)
+                    product_name = name_map.get(item.external_name)
+                    product_id = product_map.get(product_name) if product_name else None
 
                     sp_id = db.get_or_create_seller_product(
                         seller_id, item.external_name, item.external_url, item.external_id,
@@ -181,7 +208,6 @@ def run(external_job_id: int | None = None):
 
 
 if __name__ == "__main__":
-    import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("--job-id", type=int, default=None)
     args = parser.parse_args()

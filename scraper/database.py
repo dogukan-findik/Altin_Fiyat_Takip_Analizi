@@ -133,9 +133,10 @@ class DatabaseManager:
             conn.commit()
             return 1
 
-    def get_or_create_seller(self, name: str, website_url: str | None = None) -> int:
+    def get_or_create_seller(self, name: str, website_url: str | None = None, seller_type: str = "Marketplace") -> int:
         """Sellers tablosunda isimle arar, yoksa oluşturur. Pazaryeri
-        collector'larının her item için dinamik satıcı çözmesi için."""
+        collector'larının her item için dinamik satıcı çözmesi için.
+        seller_type: 'Bank' veya 'Marketplace' (default: 'Marketplace')"""
         with self.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT Id FROM Sellers WHERE Name = ?", name)
@@ -144,9 +145,9 @@ class DatabaseManager:
                 return row[0]
 
             cursor.execute(
-                "INSERT INTO Sellers (Name, WebsiteUrl, IsActive, CreatedAt, UpdatedAt) "
-                "OUTPUT INSERTED.Id VALUES (?, ?, 1, GETUTCDATE(), GETUTCDATE())",
-                name, website_url
+                "INSERT INTO Sellers (Name, WebsiteUrl, Type, IsActive, CreatedAt, UpdatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, ?, 1, GETUTCDATE(), GETUTCDATE())",
+                name, website_url, seller_type
             )
             new_id = cursor.fetchone()[0]
             conn.commit()
@@ -159,4 +160,56 @@ class DatabaseManager:
             cursor = conn.cursor()
             cursor.execute("SELECT Id, Name FROM Products")
             return {row[1]: row[0] for row in cursor.fetchall()}
+
+    def ensure_bracelet_product(self, gram_label: str) -> int:
+        """Bilezik gramajı için Products tablosunda kayıt yoksa otomatik oluşturur.
+        gram_label örn: '15 Gram Bilezik'. Varsa mevcut Id'yi döner."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Id FROM Products WHERE Name = ?", gram_label)
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+
+            normalized = gram_label.lower().replace(" ", "")
+            description = f"22 Ayar {gram_label}"
+            cursor.execute(
+                "INSERT INTO Products (Name, NormalizedName, Category, Description, OurPrice, IsActive, CreatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, 'Bilezik', ?, 0, 1, GETUTCDATE())",
+                gram_label, normalized, description
+            )
+            new_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info("Yeni bilezik ürünü oluşturuldu: %s (Id=%d)", gram_label, new_id)
+            return new_id
+
+    def ensure_gram_gold_product(self, gram_label: str) -> int:
+        """Gram Altın gramajı için Products tablosunda kayıt yoksa otomatik oluşturur.
+        gram_label örn: '5 Gram Altın', '3.5 Gram Altın' vb. Varsa mevcut Id'yi döner."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Id FROM Products WHERE Name = ?", gram_label)
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+
+            normalized = gram_label.lower().replace(" ", "")
+            description = f"24 Ayar {gram_label}"
+            cursor.execute(
+                "INSERT INTO Products (Name, NormalizedName, Category, Description, OurPrice, IsActive, CreatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, 'Gram Altın', ?, 0, 1, GETUTCDATE())",
+                gram_label, normalized, description
+            )
+            new_id = cursor.fetchone()[0]
+            conn.commit()
+            logger.info("Yeni gram altın ürünü oluşturuldu: %s (Id=%d)", gram_label, new_id)
+            return new_id
+
+    def get_gram_gold_price(self, gram: float) -> float | None:
+        """1 Gram Altın fiyatını döner. Eğer yoksa None."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT OurPrice FROM Products WHERE Name = '1 Gram Altın'")
+            row = cursor.fetchone()
+            return row[0] if row and row[0] else None
 

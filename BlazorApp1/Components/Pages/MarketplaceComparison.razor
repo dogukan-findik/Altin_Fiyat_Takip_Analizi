@@ -6,51 +6,225 @@
 
 <PageTitle>Pazaryeri Karşılaştırma</PageTitle>
 
-<h1>N11 Pazaryeri Altın Fiyatları Karşılaştırması</h1>
+<div class="container-fluid py-3">
+    <div class="d-flex align-items-center mb-4">
+        <span style="font-size:2rem" class="me-3">🏪</span>
+        <div>
+            <h2 class="mb-0 fw-bold">N11 Pazaryeri Karşılaştırma</h2>
+            <p class="text-muted mb-0">N11'deki tüm satıcıların ürünleri, bizim fiyatlarımızla ürün bazlı karşılaştırılıyor.</p>
+        </div>
+    </div>
 
-@if (!Api.IsAuthenticated)
-{
-    <p><em>Bu sayfayı görüntülemek için giriş yapmalısınız.</em></p>
-}
-else if (_breakdown is null)
-{
-    <p><em>Yükleniyor...</em></p>
-}
-else if (_breakdown.Count == 0)
-{
-    <p>Henüz karşılaştırma verisi yok.</p>
-}
-else
-{
-    @foreach (var product in _breakdown)
+    @if (!Api.IsAuthenticated)
     {
-        <h3>@product.ProductName — Bizim Fiyatımız: @product.OurPrice.ToString("N2") TL</h3>
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Satıcı</th>
-                    <th>Fiyat</th>
-                    <th>Farkımız</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach (var sp in product.SellerPrices)
-                {
-                    <tr>
-                        <td>@sp.SellerName</td>
-                        <td>@(sp.Price.HasValue? sp.Price.Value.ToString("N2") + " TL" : "—")</td>
-                        <td class="@(sp.DiffFromOurs is > 0 ? "text-danger" : sp.DiffFromOurs is < 0 ? "text-success" : "")">
-                            @(sp.DiffFromOurs.HasValue? sp.DiffFromOurs.Value.ToString("N2") + " TL" : "—")
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+        <div class="alert alert-warning d-flex align-items-center" role="alert">
+            <span class="me-2">🔒</span>
+            <span>Bu sayfayı görüntülemek için <a href="/login" class="alert-link">giriş yapmalısınız</a>.</span>
+        </div>
     }
-}
+    else if (_loading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Yükleniyor...</span>
+            </div>
+            <p class="text-muted mt-3">Pazaryeri verileri yükleniyor...</p>
+        </div>
+    }
+    else if (_sellers is null || _sellers.Count == 0)
+    {
+        <div class="alert alert-info d-flex align-items-center">
+            <span class="me-2">ℹ️</span>
+            <span>Henüz pazaryeri karşılaştırma verisi bulunmuyor.</span>
+        </div>
+    }
+    else
+    {
+        @* Genel Özet Kartları *@
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Toplam Satıcı</h6>
+                        <h2 class="fw-bold mb-0">@_sellers.Count</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Toplam Ürün</h6>
+                        <h2 class="fw-bold mb-0">@_totalProducts</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Biz Ucuzuz</h6>
+                        <h2 class="fw-bold mb-0">@_cheaperCount</h2>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);">
+                    <div class="card-body text-white text-center">
+                        <h6 class="mb-1 opacity-75">Biz Pahalıyız</h6>
+                        <h2 class="fw-bold mb-0">@_expensiveCount</h2>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3 d-flex align-items-center justify-content-between">
+            <div class="d-flex align-items-center gap-3">
+                <span class="d-flex align-items-center gap-1">
+                    <span class="d-inline-block rounded" style="width:14px;height:14px;background-color: rgba(40, 167, 69, 0.15);border: 1px solid #28a745;"></span>
+                    <small class="text-muted">Biz daha ucuzuz</small>
+                </span>
+                <span class="d-flex align-items-center gap-1">
+                    <span class="d-inline-block rounded" style="width:14px;height:14px;background-color: rgba(220, 53, 69, 0.15);border: 1px solid #dc3545;"></span>
+                    <small class="text-muted">Biz daha pahalıyız</small>
+                </span>
+            </div>
+        </div>
+
+        @foreach (var seller in _sellers)
+        {
+            var sellerCheaper = seller.Products.Count(p => p.PriceDiff < 0);
+            var sellerExpensive = seller.Products.Count(p => p.PriceDiff > 0);
+            var sellerEqual = seller.Products.Count(p => p.PriceDiff == 0);
+            var sellerScore = seller.Products.Count > 0
+                ? (sellerCheaper * 100.0 / seller.Products.Count)
+                : 0;
+
+            <div class="card mb-4 border-0 shadow-sm overflow-hidden">
+                <div class="card-header border-0 py-3"
+                     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center">
+                            <span style="font-size:1.5rem" class="me-2">🏬</span>
+                            <div>
+                                <h5 class="mb-0 fw-bold">@seller.SellerName</h5>
+                                <small class="opacity-75">@seller.Products.Count ürün takip ediliyor</small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-success px-3 py-2">✅ @sellerCheaper ucuz</span>
+                            <span class="badge bg-danger px-3 py-2">⚠️ @sellerExpensive pahalı</span>
+                            @if (sellerEqual > 0)
+                            {
+                                <span class="badge bg-secondary px-3 py-2">➖ @sellerEqual eşit</span>
+                            }
+                        </div>
+                    </div>
+                    @* İlerleme çubuğu *@
+                    <div class="progress mt-2" style="height: 4px; background-color: rgba(255,255,255,0.2);">
+                        <div class="progress-bar bg-success" role="progressbar" style="width: @sellerScore.ToString("F0")%"></div>
+                        <div class="progress-bar bg-danger" role="progressbar" style="width: @((100 - sellerScore).ToString("F0"))%"></div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle" style="font-size: 0.92rem;">
+                            <thead style="background-color: #f8f9fa;">
+                                <tr>
+                                    <th class="ps-4" style="width: 28%">
+                                        <span class="text-muted">📦 N11 Ürün Adı</span>
+                                    </th>
+                                    <th style="width: 14%" class="text-end">
+                                        <span class="text-muted">Satıcı Fiyatı</span>
+                                    </th>
+                                    <th style="width: 22%" class="text-center">
+                                        <span class="text-muted">🔗 Eşleşen Ürünümüz</span>
+                                    </th>
+                                    <th style="width: 14%" class="text-end">
+                                        <span class="text-muted">Bizim Fiyat</span>
+                                    </th>
+                                    <th style="width: 10%" class="text-end">
+                                        <span class="text-muted">Fark</span>
+                                    </th>
+                                    <th style="width: 12%" class="text-center">
+                                        <span class="text-muted">Durum</span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var product in seller.Products)
+                                {
+                                    var isOurCheaper = product.PriceDiff < 0;
+                                    var isOurExpensive = product.PriceDiff > 0;
+                                    var rowBg = isOurCheaper ? "background-color: rgba(40, 167, 69, 0.04);"
+                                              : isOurExpensive ? "background-color: rgba(220, 53, 69, 0.04);"
+                                              : "";
+
+                                    <tr style="@rowBg">
+                                        <td class="ps-4">
+                                            @if (!string.IsNullOrEmpty(product.ExternalUrl))
+                                            {
+                                                <a href="@product.ExternalUrl" target="_blank" class="text-decoration-none text-dark fw-semibold">
+                                                    @product.ExternalProductName
+                                                    <small class="text-primary ms-1">🔗</small>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-semibold">@product.ExternalProductName</span>
+                                            }
+                                        </td>
+                                        <td class="text-end fw-bold" style="font-size: 1.02rem;">
+                                            @FormatPrice(product.SellerPrice) ₺
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-3 py-1" style="background-color: #e3f2fd; color: #1565c0; font-size: 0.82rem;">
+                                                @product.MatchedProductName
+                                            </span>
+                                        </td>
+                                        <td class="text-end fw-bold" style="font-size: 1.02rem;">
+                                            @FormatPrice(product.OurPrice) ₺
+                                        </td>
+                                        <td class="text-end fw-bold @(isOurCheaper ? "text-success" : isOurExpensive ? "text-danger" : "")">
+                                            @(product.PriceDiff > 0 ? "+" : "")@FormatPrice(product.PriceDiff) ₺
+                                            <br />
+                                            <small class="fw-normal @(isOurCheaper ? "text-success" : isOurExpensive ? "text-danger" : "text-muted")">
+                                                (@(product.PriceDiffPercent > 0 ? "+" : "")@product.PriceDiffPercent.ToString("N1")%)
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (isOurCheaper)
+                                            {
+                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #d4edda; color: #155724; font-size: 0.78rem;">
+                                                    ✅ Ucuzuz
+                                                </span>
+                                            }
+                                            else if (isOurExpensive)
+                                            {
+                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #f8d7da; color: #721c24; font-size: 0.78rem;">
+                                                    ⚠️ Pahalıyız
+                                                </span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge rounded-pill bg-secondary px-3 py-2" style="font-size: 0.78rem;">➖ Eşit</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
 
 @code {
-    private List<ProductSellerBreakdownDto>? _breakdown;
+    private List<SellerProductBreakdownDto>? _sellers;
+    private bool _loading = true;
+    private int _totalProducts;
+    private int _cheaperCount;
+    private int _expensiveCount;
 
     protected override async Task OnInitializedAsync()
     {
@@ -60,6 +234,25 @@ else
             return;
         }
 
-        _breakdown = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=MarketPlace");
+        _sellers = await Api.GetAsync<List<SellerProductBreakdownDto>>("api/v1/products/seller-product-breakdown?sellerType=MarketPlace");
+
+        if (_sellers != null)
+        {
+            var allProducts = _sellers.SelectMany(s => s.Products).ToList();
+            _totalProducts = allProducts.Count;
+            _cheaperCount = allProducts.Count(p => p.PriceDiff < 0);
+            _expensiveCount = allProducts.Count(p => p.PriceDiff > 0);
+        }
+
+        _loading = false;
+    }
+
+    /// <summary>
+    /// Fiyatı Türkçe formatında gösterir: bin ayırıcı ile (2.599,50 TL)
+    /// </summary>
+    private string FormatPrice(decimal price)
+    {
+        var turkishCulture = new System.Globalization.CultureInfo("tr-TR");
+        return price.ToString("N2", turkishCulture);
     }
 }
