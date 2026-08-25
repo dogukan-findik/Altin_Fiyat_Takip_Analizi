@@ -21,6 +21,7 @@ class ProductFilter:
         # İşlenmiş takılar (bilezik hariç)
         "kolye", "küpe", "yüzük", "halhal", "broş", "iğne", "kol düğmesi",
         "zincir", "koleksiyon", "şans kolyesi", "gerdanlık",
+        "bileklik", "çeyrekli",
         # Süsleme terimleri
         "taşlı", "pırlanta", "elmas", "zümrüt", "safir", "yakut",
         "mineli", "mine", "swarovski", "kristal",

@@ -17,6 +17,59 @@ from scraper.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
+GENERIC_BRACELET_PRODUCT = "22 Ayar Bilezik"
+
+
+def rematch_generic_bracelet_rows(db: DatabaseManager, product_map: dict[str, int]) -> int:
+    """Eski '22 Ayar Bilezik' eşleşmelerini gramajlı kategorilere taşır ve
+    generic ürünü pasifleştirir."""
+    rows = db.list_seller_products_for_product_name(GENERIC_BRACELET_PRODUCT)
+    updated = 0
+
+    for sp_id, external_name in rows:
+        base_product_name = ProductMatcher.match(external_name)
+        if base_product_name is None:
+            continue
+
+        final_product_name = categorize_gold_product(external_name, base_product_name)
+        if not final_product_name or final_product_name == GENERIC_BRACELET_PRODUCT:
+            continue
+
+        product_id = product_map.get(final_product_name)
+        if product_id is None and "Gram Bilezik" in final_product_name:
+            product_id = db.ensure_bracelet_product(final_product_name)
+            product_map[final_product_name] = product_id
+        elif product_id is None and "Gram Altın" in final_product_name:
+            product_id = db.ensure_gram_gold_product(final_product_name)
+            product_map[final_product_name] = product_id
+
+        if product_id is None:
+            continue
+
+        db.update_seller_product_match(sp_id, product_id)
+        updated += 1
+        logger.info("Generic bilezik yeniden eşlendi: '%s' -> '%s'", external_name, final_product_name)
+
+    if db.deactivate_product_by_name(GENERIC_BRACELET_PRODUCT):
+        logger.info("Generic ürün pasifleştirildi: %s", GENERIC_BRACELET_PRODUCT)
+
+    return updated
+
+
+def unmatch_jewelry_as_ceyrek(db: DatabaseManager) -> int:
+    """'çeyrekli bileklik' gibi takıların Çeyrek Altın eşini kaldırır."""
+    rows = db.list_seller_products_for_product_name("Çeyrek Altın")
+    updated = 0
+    for sp_id, external_name in rows:
+        excluded, _ = ProductFilter.should_exclude(external_name)
+        lower = external_name.lower()
+        if excluded or "bileklik" in lower or "çeyrekli" in lower:
+            db.clear_seller_product_match(sp_id)
+            updated += 1
+            logger.info("Çeyrek eşlemesi kaldırıldı (takı): %s", external_name)
+    return updated
+
+
 COLLECTOR_REGISTRY = {
     "table_row": TableRowCollector,
     "table_row_playwright": TableRowPlaywrightCollector,
@@ -66,6 +119,12 @@ def run(external_job_id: int | None = None):
         return
 
     product_map = db.get_product_name_to_id_map()
+    rematched = rematch_generic_bracelet_rows(db, product_map)
+    if rematched:
+        logger.info("%d satıcı ürünü gramajlı bilezik/altın kategorisine taşındı.", rematched)
+    unmatched_jewelry = unmatch_jewelry_as_ceyrek(db)
+    if unmatched_jewelry:
+        logger.info("%d takı ürününün Çeyrek Altın eşlemesi kaldırıldı.", unmatched_jewelry)
 
     try:
         for seller_key, seller_config in SELLERS.items():
@@ -100,9 +159,15 @@ def run(external_job_id: int | None = None):
                         failed += 1
                         continue
 
-                    # 3. Bilezikler için gram bazlı kategori oluştur
-                    #    (5 Gram Bilezik, 10 Gram Bilezik vb.)
+                    # 3. Bilezik / gram altın için gram bazlı kategori oluştur
                     final_product_name = categorize_gold_product(item.external_name, base_product_name)
+                    if not final_product_name or final_product_name == GENERIC_BRACELET_PRODUCT:
+                        logger.warning(
+                            "Gramaj çıkarılamadı, generic bilezik atlanıyor: %s",
+                            item.external_name,
+                        )
+                        failed += 1
+                        continue
 
                     # 4. Fiyatı parse et
                     price = parse_price(item.raw_price)
@@ -124,11 +189,13 @@ def run(external_job_id: int | None = None):
                         logger.info("Gram bazlı ürün (toplam fiyat): %s (%.2f TL için %.1fg)",
                                     item.external_name, price, gram)
 
-                    # 6. Fiyat validasyonu
+                    # 6. Fiyat validasyonu — aşırı düşük fiyatı (2 TL çeyrek) kaydetme
                     is_valid, warning = PriceValidator.validate(final_product_name, price)
                     if not is_valid:
                         logger.warning("Fiyat anomalisi: %s - %s", item.external_name, warning)
-                        # Reddetmiyoruz, sadece uyarıyoruz — kayıt devam eder.
+                        if PriceValidator.is_implausibly_low(final_product_name, price):
+                            failed += 1
+                            continue
 
                     # 7. Ürünü veritabanına kaydet
                     product_id = product_map.get(final_product_name)
@@ -149,13 +216,8 @@ def run(external_job_id: int | None = None):
                         failed += 1
                         continue
 
-                    # Gram Altın için: eğer doğru gram kategorisi yoksa, 1 Gram fiyatıyla hesapla
+                    # Gram Altın için: eğer doğru gram kategorisi yoksa, 1g fiyatıyla hesapla
                     final_price = price
-                    if "Gram Altın" in final_product_name and product_id == product_map.get(final_product_name):
-                        # Eğer bu satırlara ulaşıldıysa, ürün ya var ya az önce oluşturuldu
-                        # Fiyat doğrudan N11'den geldiğinden, zaten toplam fiyat
-                        # Ancak eğer bizde olmayan bir gram varsa, 1g fiyatıyla hesapla
-                        pass  # Fiyat zaten doğru (toplam)
 
                     seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"], seller_type="Marketplace")
                     sp_id = db.get_or_create_seller_product(

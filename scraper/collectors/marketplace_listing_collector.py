@@ -3,6 +3,7 @@ import requests
 from bs4 import BeautifulSoup
 from scraper.models import ScrapedItem
 from scraper.config import USER_AGENT, SCRAPE_TIMEOUT, DETAIL_PAGE_DELAY_SECONDS
+from scraper.parsers.gold_parser import resolve_listing_price_text
 from scraper.utils.retry import retry
 from scraper.utils.logger import get_logger
 from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
@@ -84,11 +85,15 @@ class MarketplaceListingCollector:
                 url = "https://www.n11.com" + url
             product_id = card.get("data-prod-id") or url
 
+            primary_price = price_el.get_text(" ", strip=True)
+            card_text = card.get_text(" ", strip=True)
+            raw_price = resolve_listing_price_text(primary_price, card_text)
+
             items.append(ScrapedItem(
                 external_name=title,
                 external_url=url,
                 external_id=str(product_id),
-                raw_price=price_el.get_text(strip=True),
+                raw_price=raw_price,
                 raw_availability=None,
                 seller_name=brand,  # geçici, aşağıda gerekiyorsa gerçeğiyle değiştirilecek
             ))

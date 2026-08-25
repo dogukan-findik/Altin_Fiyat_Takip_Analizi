@@ -1,5 +1,18 @@
 ﻿import re
 
+# Kart metninden aday fiyatlar. En spesifik (binlik + kuruş) önce.
+_PRICE_FINDERS = [
+    re.compile(r"\d{1,3}(?:\.\d{3})+,\d{1,2}"),  # 12.874,33
+    re.compile(r"\d{4,},\d{1,2}"),               # 12874,33
+    re.compile(r"\d{1,3}(?:\.\d{3})+"),           # 12.874
+    re.compile(r"\d+,\d{2}"),                     # 2,60 veya 874,33
+    re.compile(r"\d+\.\d{2}"),                     # 12874.33
+]
+
+# Puan / taksit / kargo gibi küçük sayıların asıl fiyat sanılmaması
+_MIN_PLAUSIBLE_LISTING_PRICE = 100.0
+
+
 def parse_price(raw_price: str) -> float | None:
     """'12.450,75 TL', '12450.75', '₺12.450,75' gibi farklı formatlardan
     ondalık fiyat çıkarır. Parse edilemeyen değerler için None döner
@@ -15,6 +28,9 @@ def parse_price(raw_price: str) -> float | None:
     # Türkçe format: binlik nokta, ondalık virgül -> "12.450,75"
     if re.match(r'^\d{1,3}(\.\d{3})*,\d+$', cleaned):
         cleaned = cleaned.replace('.', '').replace(',', '.')
+    # Binlik nokta, kuruş yok -> "12.874"
+    elif re.match(r'^\d{1,3}(\.\d{3})+$', cleaned):
+        cleaned = cleaned.replace('.', '')
     # Sadece virgül ondalık ayracıysa -> "12450,75"
     elif ',' in cleaned and '.' not in cleaned:
         cleaned = cleaned.replace(',', '.')
@@ -24,6 +40,44 @@ def parse_price(raw_price: str) -> float | None:
         return round(float(cleaned), 2)
     except ValueError:
         return None
+
+
+def extract_prices_from_text(text: str) -> list[float]:
+    """Bir metindeki tüm fiyat adaylarını (soldan sağa, örtüşmeyen) çıkarır."""
+    if not text:
+        return []
+
+    found: list[float] = []
+    occupied: list[tuple[int, int]] = []
+
+    for pattern in _PRICE_FINDERS:
+        for match in pattern.finditer(text):
+            span = match.span()
+            if any(span[0] >= s[0] and span[1] <= s[1] for s in occupied):
+                continue
+            price = parse_price(match.group(0))
+            if price is None:
+                continue
+            found.append(price)
+            occupied.append(span)
+
+    return found
+
+
+def resolve_listing_price_text(primary_text: str, extra_text: str = "") -> str:
+    """N11 kartında seçilen fiyat düğümü puan/taksit (ör. 2,60) olabilir.
+    Önce birincil metin makul bir altın fiyatıysa onu kullanır; değilse
+    kartın geri kalanındaki en yüksek makul fiyatı seçer."""
+    primary = parse_price(primary_text) if primary_text else None
+    if primary is not None and primary >= _MIN_PLAUSIBLE_LISTING_PRICE:
+        return primary_text
+
+    combined = " ".join(part for part in (primary_text, extra_text) if part)
+    plausible = [p for p in extract_prices_from_text(combined) if p >= _MIN_PLAUSIBLE_LISTING_PRICE]
+    if plausible:
+        return f"{max(plausible):.2f}"
+
+    return primary_text or ""
 
 def is_in_stock(raw_availability_text: str | None) -> bool:
     """Stok durumu metnini yorumlar. Belirsizse (site stok bilgisi
@@ -71,7 +125,7 @@ def extract_bracelet_category(text: str) -> str | None:
     else:
         return f"{gram} Gram Bilezik"
 
-def categorize_gold_product(text: str, base_product_name: str) -> str:
+def categorize_gold_product(text: str, base_product_name: str) -> str | None:
     """Ürün başlığından ve temel ürün tipinden gram bazlı kategori oluşturur.
     
     Bilezikler için: gram ağırlığına göre ayrı kategoriler oluşturur.
@@ -86,8 +140,8 @@ def categorize_gold_product(text: str, base_product_name: str) -> str:
     """
     
     if "bilezik" in base_product_name.lower():
-        category = extract_bracelet_category(text)
-        return category if category else base_product_name
+        # Generic '22 Ayar Bilezik'e düşme: gram yoksa None (kayıt atlanır)
+        return extract_bracelet_category(text)
     
     # Gram Altın için de gram bazlı kategori oluştur
     if "gram altın" in base_product_name.lower():

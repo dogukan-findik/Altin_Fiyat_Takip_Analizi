@@ -1,4 +1,5 @@
-﻿using Altin_Fiyat_Takip_Analizi.Application.DTOs;
+﻿using Altin_Fiyat_Takip_Analizi.Application.Common;
+using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Exceptions;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
@@ -36,7 +37,16 @@ public class PriceComparisonService : IPriceComparisonService
         // bulunamazsa (henüz senkronize edilmemişse) Product.OurPrice'a düş.        
         var sourcePrice = await _ownPriceRepo.GetQueryable()
             .FirstOrDefaultAsync(o => o.ProductId == productId && o.SourceType == SellerType.Bank);
-        decimal ourPrice = sourcePrice?.Price ?? product.OurPrice; // son çare olarak eski donuk kolon
+        var storedPrice = sourcePrice?.Price ?? product.OurPrice;
+        var allProducts = await _productRepo.GetAllAsync();
+        var ownPrices = await _ownPriceRepo.GetQueryable()
+            .Where(o => o.SourceType == SellerType.Bank)
+            .ToListAsync();
+        decimal ourPrice = GramPriceHelper.ResolveOurPrice(
+            product,
+            storedPrice,
+            allProducts,
+            id => ownPrices.FirstOrDefault(o => o.ProductId == id)?.Price);
 
         var last24h = DateTime.UtcNow.AddHours(-24);
 
@@ -99,6 +109,9 @@ public class PriceComparisonService : IPriceComparisonService
     public async Task<List<ProductSellerBreakdownDto>> GetSellerBreakdownAsync(SellerType sellerType)
     {
         var products = (await _productRepo.GetAllAsync()).Where(p => p.IsActive).ToList();
+        var ownPrices = await _ownPriceRepo.GetQueryable()
+            .Where(o => o.SourceType == SellerType.Bank)
+            .ToListAsync();
         var sellers = await _sellerRepo.GetQueryable()
             .Where(s => s.Type == sellerType && s.IsActive)
             .ToListAsync();
@@ -119,9 +132,13 @@ public class PriceComparisonService : IPriceComparisonService
 
         foreach (var product in products)
         {
-            var sourcePrice = await _ownPriceRepo.GetQueryable()
-                .FirstOrDefaultAsync(o => o.ProductId == product.Id && o.SourceType == SellerType.Bank);
-            var ourPrice = sourcePrice?.Price ?? product.OurPrice;
+            var sourcePrice = ownPrices.FirstOrDefault(o => o.ProductId == product.Id);
+            var storedPrice = sourcePrice?.Price ?? product.OurPrice;
+            var ourPrice = GramPriceHelper.ResolveOurPrice(
+                product,
+                storedPrice,
+                products,
+                id => ownPrices.FirstOrDefault(o => o.ProductId == id)?.Price);
 
             var dto = new ProductSellerBreakdownDto
             {
@@ -206,7 +223,12 @@ public class PriceComparisonService : IPriceComparisonService
 
                 // Bizim fiyatımız: önce OwnPriceBySource, yoksa Product.OurPrice
                 var ownPrice = ownPrices.FirstOrDefault(o => o.ProductId == productId);
-                var ourPrice = ownPrice?.Price ?? product.OurPrice;
+                var storedPrice = ownPrice?.Price ?? product.OurPrice;
+                var ourPrice = GramPriceHelper.ResolveOurPrice(
+                    product,
+                    storedPrice,
+                    products.Values,
+                    id => ownPrices.FirstOrDefault(o => o.ProductId == id)?.Price);
 
                 var diff = ourPrice - ph.Price;
                 var diffPercent = ph.Price != 0 ? (diff / ph.Price) * 100 : 0;

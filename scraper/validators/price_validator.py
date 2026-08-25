@@ -44,3 +44,13 @@
         if price > max_price:
             return False, f"Fiyat çok yüksek: {price:.2f} TL (beklenen max: {max_price})"
         return True, None
+
+    @classmethod
+    def is_implausibly_low(cls, product_name: str, price: float) -> bool:
+        """Puan/taksit kalıntısı (2 TL çeyrek gibi) kayda yazılmasın."""
+        base_name = cls._get_product_base_name(product_name)
+        range_info = cls._RANGES.get(base_name)
+        if range_info is None:
+            return price < 100
+        min_price, _ = range_info
+        return price < min_price

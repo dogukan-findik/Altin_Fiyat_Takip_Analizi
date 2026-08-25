@@ -63,11 +63,11 @@ class DatabaseManager:
 
             if row:
                 sp_id, existing_product_id = row
-                if product_id is not None and existing_product_id is None:
+                if product_id is not None and existing_product_id != product_id:
                     cursor.execute(
                         "UPDATE SellerProducts SET ProductId = ?, IsMatched = 1, MatchConfidence = 100, "
-                        "LastCollectedAt = GETUTCDATE() WHERE Id = ?",
-                        product_id, sp_id
+                        "ExternalName = ?, ExternalUrl = ?, LastCollectedAt = GETUTCDATE() WHERE Id = ?",
+                        product_id, external_name, external_url, sp_id
                     )
                 else:
                     cursor.execute(
@@ -205,11 +205,72 @@ class DatabaseManager:
             logger.info("Yeni gram altın ürünü oluşturuldu: %s (Id=%d)", gram_label, new_id)
             return new_id
 
-    def get_gram_gold_price(self, gram: float) -> float | None:
-        """1 Gram Altın fiyatını döner. Eğer yoksa None."""
+    def get_unit_gram_gold_price(self) -> float | None:
+        """1 Gram Altın (yoksa Gram Altın) birim fiyatını OwnPriceBySource / OurPrice'dan döner."""
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT OurPrice FROM Products WHERE Name = '1 Gram Altın'")
-            row = cursor.fetchone()
-            return row[0] if row and row[0] else None
+            for name in ("1 Gram Altın", "Gram Altın"):
+                cursor.execute(
+                    "SELECT COALESCE("
+                    "(SELECT TOP 1 ops.Price FROM OwnPriceBySource ops "
+                    " WHERE ops.ProductId = p.Id AND ops.SourceType = 'Bank'),"
+                    " p.OurPrice) "
+                    "FROM Products p WHERE p.Name = ?",
+                    name,
+                )
+                row = cursor.fetchone()
+                if row and row[0] and float(row[0]) > 0:
+                    return float(row[0])
+        return None
+
+    def list_seller_products_for_product_name(self, product_name: str) -> list[tuple[int, str]]:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT sp.Id, sp.ExternalName FROM SellerProducts sp "
+                "INNER JOIN Products p ON p.Id = sp.ProductId WHERE p.Name = ?",
+                product_name,
+            )
+            return [(row[0], row[1]) for row in cursor.fetchall()]
+
+    def clear_seller_product_match(self, seller_product_id: int, deactivate: bool = True):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if deactivate:
+                cursor.execute(
+                    "UPDATE SellerProducts SET ProductId = NULL, IsMatched = 0, MatchConfidence = NULL, "
+                    "IsActive = 0 WHERE Id = ?",
+                    seller_product_id,
+                )
+            else:
+                cursor.execute(
+                    "UPDATE SellerProducts SET ProductId = NULL, IsMatched = 0, MatchConfidence = NULL "
+                    "WHERE Id = ?",
+                    seller_product_id,
+                )
+            conn.commit()
+
+    def update_seller_product_match(self, seller_product_id: int, product_id: int):
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE SellerProducts SET ProductId = ?, IsMatched = 1, MatchConfidence = 100 "
+                "WHERE Id = ?",
+                product_id, seller_product_id,
+            )
+            conn.commit()
+
+    def deactivate_product_by_name(self, product_name: str) -> bool:
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE Products SET IsActive = 0 WHERE Name = ?",
+                product_name,
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def get_gram_gold_price(self, gram: float) -> float | None:
+        """Geriye dönük: 1 gram fiyatını döner. gram parametresi kullanılmaz."""
+        return self.get_unit_gram_gold_price()
 
