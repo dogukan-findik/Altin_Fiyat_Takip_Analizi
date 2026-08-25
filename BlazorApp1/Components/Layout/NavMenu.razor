@@ -3,10 +3,11 @@
 @inject NavigationManager Nav
 @implements IDisposable
 
-<div class="top-row ps-3 navbar navbar-dark" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); box-shadow: 0 2px 8px rgba(0,0,0,0.15);">
+<div class="top-row ps-3 navbar navbar-dark" style="background: transparent; border-bottom: 1px solid rgba(255,255,255,.08);">
     <div class="container-fluid">
-        <a class="navbar-brand fw-bold" href="" style="font-size: 1.3rem;">
-            <span style="font-size: 1.5rem; margin-right: 0.5rem;">💰</span>Altın Fiyat Takip
+        <a class="navbar-brand fw-bold d-flex align-items-center" href="" style="font-size: 1.2rem; gap: .6rem;">
+            <span style="font-size: 1.6rem;">💰</span>
+            <span style="background: linear-gradient(135deg, #e2b03e, #f5d76e); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Altın Takip</span>
         </a>
     </div>
 </div>
@@ -17,45 +18,59 @@
     <nav class="flex-column">
         @if (Api.IsAuthenticated)
         {
-            <div class="nav-item px-3 pt-2">
-                <NavLink class="nav-link" href="">
-                    <span class="me-2">🏠</span> Anasayfa
+            <div class="px-3 pt-3 pb-2">
+                <small class="text-uppercase" style="font-size:.7rem; letter-spacing:.1em; color: rgba(255,255,255,.35); font-weight:700;">Ana Menü</small>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <i class="bi bi-house-door-fill me-2"></i> Anasayfa
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="banka-karsilastirma">
-                    <span class="me-2">🏦</span> Banka Karşılaştırma
+                    <i class="bi bi-bank me-2"></i> Banka Karşılaştırma
                 </NavLink>
             </div>
             <div class="nav-item px-3">
                 <NavLink class="nav-link" href="pazaryeri-karsilastirma">
-                    <span class="me-2">🏪</span> N11 Pazaryeri
+                    <i class="bi bi-shop me-2"></i> N11 Pazaryeri
                 </NavLink>
             </div>
-            
-            <hr style="margin: 1rem 0; opacity: 0.3;" />
-            
+
+            <div class="px-3 pt-3 pb-2">
+                <small class="text-uppercase" style="font-size:.7rem; letter-spacing:.1em; color: rgba(255,255,255,.35); font-weight:700;">Raporlar</small>
+            </div>
             <div class="nav-item px-3">
-                <div class="nav-link text-muted" style="cursor: default; padding-top: 0.5rem; padding-bottom: 0.5rem; font-size: 0.9rem;">
-                    <span class="me-2">👤</span>
-                    <strong>@Api.CurrentUsername</strong>
-                </div>
-                <div class="nav-link text-muted" style="cursor: default; padding-top: 0.25rem; padding-bottom: 0.5rem; font-size: 0.85rem;">
-                    <span class="me-2">🔑</span> @Api.CurrentRole
+                <NavLink class="nav-link" href="raporlar">
+                    <i class="bi bi-file-earmark-bar-graph me-2"></i> Günlük Raporlar
+                </NavLink>
+            </div>
+
+            <hr style="margin: 1rem 1rem; opacity: 0.1;" />
+
+            <div class="nav-item px-3">
+                <div class="d-flex align-items-center px-2 py-2 rounded" style="background: rgba(255,255,255,.05);">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle me-2" style="width:36px; height:36px; background: linear-gradient(135deg, #e2b03e, #f5d76e); color: #1a1a2e; font-weight:800; font-size:.85rem;">
+                        @(Api.CurrentUsername?[0].ToString().ToUpper() ?? "U")
+                    </div>
+                    <div>
+                        <div style="font-size:.85rem; color:#fff; font-weight:600;">@Api.CurrentUsername</div>
+                        <div style="font-size:.7rem; color: rgba(255,255,255,.45);">@Api.CurrentRole</div>
+                    </div>
                 </div>
             </div>
-            
-            <div class="nav-item px-3">
-                <button class="nav-link btn btn-link text-danger w-100 text-start" @onclick="HandleLogout" style="font-weight: 600;">
-                    <span class="me-2">🚪</span> Çıkış Yap
+
+            <div class="nav-item px-3 pb-3 pt-2">
+                <button class="nav-link btn btn-link text-start w-100" @onclick="HandleLogout" style="color: #ef4444 !important; font-weight: 600; font-size:.85rem;">
+                    <i class="bi bi-box-arrow-left me-2"></i> Çıkış Yap
                 </button>
             </div>
         }
         else
         {
-            <div class="nav-item px-3 pt-2">
+            <div class="nav-item px-3 pt-3">
                 <NavLink class="nav-link" href="login">
-                    <span class="me-2">🔓</span> Giriş Yap
+                    <i class="bi bi-box-arrow-in-right me-2"></i> Giriş Yap
                 </NavLink>
             </div>
         }

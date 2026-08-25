@@ -13,7 +13,7 @@
     # olduğu için bunlar dinamiktir. Genel aralıklar kullanılır.
     _RANGES: dict[str, tuple[float, float]] = {
         "Gram Altın": (500, 100000),  # 1g ~ 80g arası (toplam fiyat)
-        "22 Ayar Bilezik": (3000, 150000),  # 5g ~ 100g arası (toplam fiyat)
+        "22 Ayar Bilezik": (3000, 1000000),  # 5g ~ 100g arası (toplam fiyat)
         "Çeyrek Altın": (9000, 18000),
         "Yarım Altın": (18000, 36000),
         "Tam Altın": (36000, 72000),
@@ -41,8 +41,10 @@
         min_price, max_price = range_info
         if price < min_price:
             return False, f"Fiyat çok düşük: {price:.2f} TL (beklenen min: {min_price})"
-        if price > max_price:
-            return False, f"Fiyat çok yüksek: {price:.2f} TL (beklenen max: {max_price})"
+        # Maksimum fiyat sınırını kaldırdık, çünkü 50-100 gram altınlar vb. üst limiti geçebiliyor.
+        # if price > max_price:
+        #     return False, f"Fiyat çok yüksek: {price:.2f} TL (beklenen max: {max_price})"
+        
         return True, None
 
     @classmethod

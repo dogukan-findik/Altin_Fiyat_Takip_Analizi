@@ -69,4 +69,11 @@ public class ApiService
         var response = await _http.DeleteAsync(endpoint);
         return response.IsSuccessStatusCode;
     }
+
+    public async Task<TResponse?> PostEmptyAsync<TResponse>(string endpoint)
+    {
+        var response = await _http.PostAsync(endpoint, null);
+        if (!response.IsSuccessStatusCode) return default;
+        return await response.Content.ReadFromJsonAsync<TResponse>();
+    }
 }

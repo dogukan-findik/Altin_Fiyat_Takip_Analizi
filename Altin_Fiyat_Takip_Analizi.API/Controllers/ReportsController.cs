@@ -42,4 +42,28 @@ public class ReportsController : ControllerBase
         var summary = await _reportService.GetWeeklySummaryAsync(endDate);
         return Ok(summary);
     }
+
+    /// <summary>
+    /// Bugünkü günlük raporu getirir (varsa).
+    /// </summary>
+    [HttpGet("daily/today")]
+    public async Task<ActionResult<DailyReportDto>> GetToday()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var report = await _reportService.GetReportByDateAsync(today);
+        return report is null ? NotFound("Bugün için rapor henüz üretilmedi.") : Ok(report);
+    }
+
+    /// <summary>
+    /// Bugünkü günlük raporu üretir (yoksa oluşturur).
+    /// Admin ve User rolleri rapor oluşturabilir.
+    /// </summary>
+    [HttpPost("daily/today/generate")]
+    [Authorize(Roles = "Admin,User")]
+    public async Task<ActionResult<DailyReportDto>> GenerateToday()
+    {
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+        var report = await _reportService.GenerateDailyReportAsync(today);
+        return Ok(report);
+    }
 }

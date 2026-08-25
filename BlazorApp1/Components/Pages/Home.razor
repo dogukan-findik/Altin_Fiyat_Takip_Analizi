@@ -3,175 +3,141 @@
 @inject ApiService Api
 @inject NavigationManager Nav
 
-<PageTitle>Anasayfa</PageTitle>
+<PageTitle>Anasayfa - Altin Fiyat Takip</PageTitle>
 
-<div class="container-fluid py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 100vh;">
-    @if (!Api.IsAuthenticated)
-    {
-        <div class="row justify-content-center align-items-center" style="min-height: 100vh;">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg" style="border-radius: 16px;">
-                    <div class="card-body p-5 text-center">
-                        <div style="font-size: 4rem; margin-bottom: 1.5rem;">💰</div>
-                        <h1 class="fw-bold mb-2">Altın Fiyat Takip Analizi</h1>
-                        <p class="text-muted fs-5 mb-4">
-                            Banka ve pazaryeri altın fiyatlarını gerçek zamanlı olarak takip edin, 
-                            karşılaştırın ve analiz edin.
-                        </p>
-                        
-                        <div class="row mb-4">
-                            <div class="col-md-6">
-                                <div class="py-3">
-                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏦</div>
-                                    <h5 class="fw-bold mb-1">Banka Karşılaştırma</h5>
-                                    <p class="text-muted small">QNB, Garanti, Yapı Kredi fiyatları</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="py-3">
-                                    <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏪</div>
-                                    <h5 class="fw-bold mb-1">N11 Pazaryeri</h5>
-                                    <p class="text-muted small">Ürün bazlı fiyat karşılaştırma</p>
-                                </div>
-                            </div>
+@if (!Api.IsAuthenticated)
+{
+    <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);">
+        <div style="max-width:520px; text-align:center; padding:2rem;">
+            <div style="font-size:4.5rem; margin-bottom:1rem;">&#x1F4B0;</div>
+            <h1 style="color:#e2b03e; font-size:2.25rem; font-weight:800; margin-bottom:.5rem;">Altin Fiyat Takip</h1>
+            <p style="color:rgba(255,255,255,.6); font-size:1.1rem; line-height:1.6; margin-bottom:2rem;">
+                Banka ve pazaryeri altin fiyatlarini gercek zamanli olarak takip edin,
+                karsilastirin ve analiz edin.
+            </p>
+            <div class="row g-3 mb-4">
+                <div class="col-6">
+                    <div style="background:rgba(255,255,255,.06); border-radius:12px; padding:1.5rem;">
+                        <i class="bi bi-bank" style="font-size:2rem; color:#e2b03e;"></i>
+                        <h6 style="color:#fff; margin-top:.75rem; font-weight:700;">Banka Fiyatlari</h6>
+                        <p style="color:rgba(255,255,255,.45); font-size:.8rem; margin:0;">QNB, Garanti, Yapi Kredi</p>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div style="background:rgba(255,255,255,.06); border-radius:12px; padding:1.5rem;">
+                        <i class="bi bi-shop" style="font-size:2rem; color:#e2b03e;"></i>
+                        <h6 style="color:#fff; margin-top:.75rem; font-weight:700;">N11 Pazaryeri</h6>
+                        <p style="color:rgba(255,255,255,.45); font-size:.8rem; margin:0;">Urun bazli karsilastirma</p>
+                    </div>
+                </div>
+            </div>
+            <button class="btn btn-lg w-100" style="background:linear-gradient(135deg,#e2b03e,#c9982e); color:#1a1a2e; font-weight:800; padding:.875rem; border:none; border-radius:10px; font-size:1.05rem;" @onclick="GoToLogin">
+                <i class="bi bi-box-arrow-in-right me-2"></i>Giris Yap
+            </button>
+        </div>
+    </div>
+}
+else
+{
+    <div class="page-header d-flex justify-content-between align-items-start">
+        <div>
+            <h2 style="font-size:1.75rem;">Hos geldin, <span class="text-gold">@Api.CurrentUsername</span></h2>
+            <p>Altin fiyat takip sistemine genel bakis</p>
+        </div>
+        <span class="badge rounded-pill px-3 py-2" style="background:rgba(226,176,62,.12); color:#e2b03e; font-weight:600; font-size:.85rem;">
+            <i class="bi bi-shield-check me-1"></i>@Api.CurrentRole
+        </span>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-md-6">
+            <div class="card border-0" style="cursor:pointer; border-radius:16px;" @onclick="GoToBank">
+                <div class="card-body p-4" style="background:linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); border-radius:16px; color:#fff;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="fw-bold mb-2">Banka Karsilastirma</h4>
+                            <p class="mb-3 opacity-75" style="font-size:.9rem;">QNB, Garanti ve Yapi Kredi bankalarinin altin fiyatlarini karsilastirin.</p>
+                            <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);">Karsilastirmaya Git <i class="bi bi-arrow-right ms-1"></i></span>
                         </div>
-
-                        <button class="btn btn-primary btn-lg w-100" @onclick="GoToLogin" style="border-radius: 8px; padding: 0.75rem 2rem; font-weight: 600;">
-                            🔓 Giriş Yap
-                        </button>
-                        <p class="text-muted small mt-3 mb-0">Lütfen giriş yaparak devam edin</p>
+                        <i class="bi bi-bank" style="font-size:3rem; opacity:.2;"></i>
                     </div>
                 </div>
             </div>
         </div>
-    }
-    else
-    {
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="d-flex justify-content-between align-items-center mb-5">
-                    <div>
-                        <h2 class="text-white fw-bold mb-1">
-                            👋 Hoş geldin, @Api.CurrentUsername!
-                        </h2>
-                        <p class="text-white opacity-75">Altın fiyat takip sistemine hoş geldiniz</p>
-                    </div>
-                    <div style="font-size: 3rem;">📊</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-5">
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;" 
-                     @onclick="GoToBank"
-                     onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.2)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
-                    <div class="card-body p-4 text-white" style="border-radius: 12px;">
-                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏦</div>
-                        <h3 class="fw-bold mb-2">Banka Karşılaştırma</h3>
-                        <p class="mb-0 opacity-85">
-                            QNB Finans, Garanti BBVA ve Yapı Kredi bankalarının altın fiyatlarını 
-                            bizim fiyatlarımızla karşılaştırın.
-                        </p>
-                        <div class="mt-3">
-                            <small class="opacity-75">Tıkla → Karşılaştırmaya Git</small>
+        <div class="col-md-6">
+            <div class="card border-0" style="cursor:pointer; border-radius:16px;" @onclick="GoToMarketplace">
+                <div class="card-body p-4" style="background:linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border-radius:16px; color:#fff;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h4 class="fw-bold mb-2">N11 Pazaryeri</h4>
+                            <p class="mb-3 opacity-75" style="font-size:.9rem;">N11 deki tum saticilarin urunlerini urun bazinda karsilastirin.</p>
+                            <span class="badge rounded-pill px-3 py-2" style="background:rgba(255,255,255,.2);">Karsilastirmaya Git <i class="bi bi-arrow-right ms-1"></i></span>
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-md-6">
-                <div class="card border-0 shadow-lg" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
-                     @onclick="GoToMarketplace"
-                     onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='0 12px 24px rgba(0,0,0,0.2)'"
-                     onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'">
-                    <div class="card-body p-4 text-white" style="border-radius: 12px;">
-                        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🏪</div>
-                        <h3 class="fw-bold mb-2">N11 Pazaryeri</h3>
-                        <p class="mb-0 opacity-85">
-                            N11'deki tüm satıcıların ürünlerini ürün bazında karşılaştırın. 
-                            Hangi satıcılar daha ucuz, hangisi daha pahalı görmek için tıklayın.
-                        </p>
-                        <div class="mt-3">
-                            <small class="opacity-75">Tıkla → Karşılaştırmaya Git</small>
-                        </div>
+                        <i class="bi bi-shop" style="font-size:3rem; opacity:.2;"></i>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-0 shadow-lg" style="background: rgba(255, 255, 255, 0.95); border-radius: 12px;">
-                    <div class="card-body p-4">
-                        <h5 class="fw-bold mb-3">ℹ️ Sistemimiz Hakkında</h5>
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <h6 class="fw-bold text-primary">🔄 Gerçek Zamanlı Veri</h6>
-                                    <p class="text-muted small mb-0">
-                                        Fiyatlar her saat otomatik olarak güncellenir. 
-                                        En güncel bilgileri her zaman görebilirsiniz.
-                                    </p>
-                                </div>
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0" style="cursor:pointer; border-radius:16px;" @onclick="GoToReports">
+                <div class="card-body p-4" style="background:linear-gradient(135deg, #059669 0%, #10b981 100%); border-radius:16px; color:#fff;">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h5 class="fw-bold mb-2">Gunluk Raporlar</h5>
+                            <p class="mb-0 opacity-75" style="font-size:.85rem;">Detayli rapor olusturun ve gecmis raporlara erisin.</p>
+                        </div>
+                        <i class="bi bi-file-earmark-bar-graph" style="font-size:2.5rem; opacity:.2;"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card border-0" style="border-radius:16px;">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3"><i class="bi bi-info-circle me-2 text-gold"></i>Sistem Hakkinda</h5>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <div class="p-3 rounded" style="background:#f8fafc;">
+                                <i class="bi bi-arrow-repeat text-primary" style="font-size:1.25rem;"></i>
+                                <h6 class="fw-bold mt-2 mb-1" style="font-size:.9rem;">Otomatik Guncelleme</h6>
+                                <p class="text-muted mb-0" style="font-size:.8rem;">Fiyatlar her 2 saatte otomatik toplanir.</p>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <h6 class="fw-bold text-success">📊 Kapsamlı Analiz</h6>
-                                    <p class="text-muted small mb-0">
-                                        Banka ve pazaryeri fiyatlarını paralel olarak takip edin. 
-                                        Trendi kolaylıkla görebilirsiniz.
-                                    </p>
-                                </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded" style="background:#f8fafc;">
+                                <i class="bi bi-graph-up-arrow text-success" style="font-size:1.25rem;"></i>
+                                <h6 class="fw-bold mt-2 mb-1" style="font-size:.9rem;">Kapsamli Analiz</h6>
+                                <p class="text-muted mb-0" style="font-size:.8rem;">Banka ve pazaryeri fiyatlarini paralel takip.</p>
                             </div>
-                            <div class="col-md-4">
-                                <div class="mb-3">
-                                    <h6 class="fw-bold text-danger">🎯 Hedef Stratejisi</h6>
-                                    <p class="text-muted small mb-0">
-                                        Gram bazında fiyat karşılaştırması yaparak en iyi alımı yapın. 
-                                        Bilezik ve barları kendi fiyatlarımızla karşılaştırın.
-                                    </p>
-                                </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="p-3 rounded" style="background:#f8fafc;">
+                                <i class="bi bi-clock-history text-warning" style="font-size:1.25rem;"></i>
+                                <h6 class="fw-bold mt-2 mb-1" style="font-size:.9rem;">Kendi Fiyat Sync</h6>
+                                <p class="text-muted mb-0" style="font-size:.8rem;">Magaza fiyatlari her 5 dakikada guncellenir.</p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <div class="row mt-4">
-            <div class="col-12 text-center">
-                <p class="text-white opacity-75 small">
-                    Son Güncelleme: @DateTime.Now.ToString("dd.MM.yyyy HH:mm:ss") | 
-                    Kullanıcı Rolü: <strong>@Api.CurrentRole</strong>
-                </p>
-            </div>
-        </div>
-    }
-</div>
+    <div class="text-center">
+        <small class="text-muted">Son Guncelleme: @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</small>
+    </div>
+}
 
 @code {
     protected override void OnInitialized()
     {
-        if (Api.IsAuthenticated)
-        {
-            StateHasChanged();
-        }
+        if (Api.IsAuthenticated) StateHasChanged();
     }
-
-    private void GoToLogin()
-    {
-        Nav.NavigateTo("/login");
-    }
-
-    private void GoToBank()
-    {
-        Nav.NavigateTo("/banka-karsilastirma");
-    }
-
-    private void GoToMarketplace()
-    {
-        Nav.NavigateTo("/pazaryeri-karsilastirma");
-    }
+    private void GoToLogin() => Nav.NavigateTo("/login");
+    private void GoToBank() => Nav.NavigateTo("/banka-karsilastirma");
+    private void GoToMarketplace() => Nav.NavigateTo("/pazaryeri-karsilastirma");
+    private void GoToReports() => Nav.NavigateTo("/raporlar");
 }

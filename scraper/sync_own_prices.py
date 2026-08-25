@@ -270,7 +270,7 @@ def run():
             logger.warning("'%s' güncellenemedi.", product_name)
             skipped.append(product_name)
 
-    # 3) Gram Altın fiyatlarını gram gram çek (TOPLAM FİYAT)
+        # 3) Gram Altın fiyatlarını gram gram çek (TOPLAM FİYAT)
     gram_altin_prices = fetch_gram_altin_prices()
     for product_name, price in gram_altin_prices.items():
         # Eksik gramajları otomatik oluştur
@@ -281,6 +281,24 @@ def run():
         else:
             logger.warning("'%s' güncellenemedi.", product_name)
             skipped.append(product_name)
+
+    # 3b) Banka panelindeki ORİJİNAL "Gram Altın" ürünü (başında sayı YOK,
+    # ProductId sabit) hâlâ ayrı bir kayıt — GramPriceHelper'ın regex'i
+    # "1 Gram Altın" gibi sayı ile başlayanları eşleştirse de düz "Gram
+    # Altın" adını eşleştirmiyor, o yüzden burada AYRICA, açıkça
+    # güncelliyoruz. 1 gramlık fiyatı referans alıyoruz (gram başına =
+    # toplam fiyat, çünkü 1 gram için ikisi aynı şey).
+    one_gram_price = gram_altin_prices.get("1 Gram Altın")
+    if one_gram_price is not None:
+        affected = db.update_own_price("Gram Altın", one_gram_price, source_type="Bank")
+        if affected > 0:
+            updated.append({"product": "Gram Altın", "price": one_gram_price, "source": "Bank"})
+        else:
+            logger.warning("'Gram Altın' (orijinal, sabit ürün) güncellenemedi — Products tablosunda bu isim yok mu?")
+            skipped.append("Gram Altın")
+    else:
+        logger.warning("1 gramlık fiyat bulunamadı, 'Gram Altın' (orijinal) güncellenemedi.")
+        skipped.append("Gram Altın")
 
     for cat in STORE_CATEGORIES:
         if cat["product"] not in store_prices and cat["product"] not in skipped:

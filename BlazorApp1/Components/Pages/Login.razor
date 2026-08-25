@@ -6,28 +6,48 @@
 
 <PageTitle>Giriş Yap</PageTitle>
 
-<div class="login-container">
-    <h1>Altın Fiyat Takip Analizi</h1>
-
-    <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
-        <div class="form-group">
-            <label>Kullanıcı Adı</label>
-            <InputText @bind-Value="_loginModel.Username" class="form-control" />
-        </div>
-        <div class="form-group">
-            <label>Şifre</label>
-            <InputText @bind-Value="_loginModel.Password" type="password" class="form-control" />
+<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);">
+    <div style="width: 100%; max-width: 440px; padding: 1rem;">
+        <div class="text-center mb-4">
+            <div style="font-size: 3.5rem; margin-bottom: .75rem;">💰</div>
+            <h1 style="color: #e2b03e; font-size: 1.5rem; margin-bottom: .25rem;">Altın Fiyat Takip Analizi</h1>
+            <p style="color: rgba(255,255,255,.5); font-size: .9rem;">Hesabınıza giriş yapın</p>
         </div>
 
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <p class="error-message">@_errorMessage</p>
-        }
+        <div class="login-container">
+            <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
+                <div class="form-group">
+                    <label><i class="bi bi-person me-1"></i> Kullanıcı Adı</label>
+                    <InputText @bind-Value="_loginModel.Username" class="form-control" placeholder="Kullanıcı adınızı girin" />
+                </div>
+                <div class="form-group">
+                    <label><i class="bi bi-lock me-1"></i> Şifre</label>
+                    <InputText @bind-Value="_loginModel.Password" type="password" class="form-control" placeholder="Şifrenizi girin" />
+                </div>
 
-        <button type="submit" class="btn-primary" disabled="@_isLoading">
-            @(_isLoading ? "Giriş yapılıyor..." : "Giriş Yap")
-        </button>
-    </EditForm>
+                @if (!string.IsNullOrEmpty(_errorMessage))
+                {
+                    <div class="alert" style="background: #fde2e2; color: #991b1b; padding: .75rem 1rem; font-size: .9rem; border-radius: 8px;">
+                        <i class="bi bi-exclamation-circle me-1"></i> @_errorMessage
+                    </div>
+                }
+
+                <button type="submit" class="btn btn-primary" disabled="@_isLoading"
+                        style="background: linear-gradient(135deg, #e2b03e, #c9982e); border: none; color: #1a1a2e;">
+                    @if (_isLoading)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        <span>Giriş yapılıyor...</span>
+                    }
+                    else
+                    {
+                        <i class="bi bi-box-arrow-in-right me-1"></i>
+                        <span>Giriş Yap</span>
+                    }
+                </button>
+            </EditForm>
+        </div>
+    </div>
 </div>
 
 @code {

@@ -1,7 +1,4 @@
 ﻿using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using System.IO;
 using Quartz;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
@@ -9,16 +6,16 @@ using Altin_Fiyat_Takip_Analizi.Domain.Enums;
 
 namespace Altin_Fiyat_Takip_Analizi.Scheduler.Jobs;
 
-public class PriceCollectionJob : IJob
+public class BankPriceCollectionJob : IJob
 {
     private readonly IRepository<CollectionJob> _jobRepo;
     private readonly IConfiguration _configuration;
-    private readonly ILogger<PriceCollectionJob> _logger;
+    private readonly ILogger<BankPriceCollectionJob> _logger;
 
-    public PriceCollectionJob(
+    public BankPriceCollectionJob(
         IRepository<CollectionJob> jobRepo,
         IConfiguration configuration,
-        ILogger<PriceCollectionJob> logger)
+        ILogger<BankPriceCollectionJob> logger)
     {
         _jobRepo = jobRepo;
         _configuration = configuration;
@@ -29,7 +26,7 @@ public class PriceCollectionJob : IJob
     {
         var job = new CollectionJob
         {
-            JobType = "Scheduled",
+            JobType = "Scheduled-Bank",
             Status = JobStatus.Running,
             StartedAt = DateTime.UtcNow,
             TriggeredBy = "System"
@@ -40,14 +37,14 @@ public class PriceCollectionJob : IJob
 
         var pythonPath = _configuration["Scraper:PythonPath"] ?? "python";
         var workingDirectory = _configuration["Scraper:WorkingDirectory"]
-            ?? throw new InvalidOperationException("Scraper:ScraperScriptPath appsettings.json'da tanımlı değil.");
+            ?? throw new InvalidOperationException("Scraper:WorkingDirectory appsettings.json'da tanımlı değil.");
 
         try
         {
             var psi = new ProcessStartInfo
             {
-                FileName = pythonPath, // Doğrudan python.exe'ye gider
-                Arguments = $"-m scraper.main --job-id {jobId}",
+                FileName = pythonPath,
+                Arguments = $"-m scraper.sync_banks --job-id {jobId}",
                 WorkingDirectory = workingDirectory,
                 RedirectStandardOutput = true,
                 RedirectStandardError = true,
@@ -55,32 +52,28 @@ public class PriceCollectionJob : IJob
                 CreateNoWindow = true
             };
 
-            _logger.LogInformation("Scraper başlatılıyor: {Python} -m scraper.main --job-id {JobId} (WorkingDirectory: {Dir})",
-                pythonPath, jobId, workingDirectory);
-            _logger.LogInformation("WorkingDirectory var mı: {Exists}", Directory.Exists(workingDirectory));
+            _logger.LogInformation("Banka scraper başlatılıyor: {Python} -m scraper.sync_banks --job-id {JobId}",
+                pythonPath, jobId);
 
             using var process = Process.Start(psi)
-                ?? throw new InvalidOperationException("Scraper process başlatılamadı.");
+                ?? throw new InvalidOperationException("Banka scraper process başlatılamadı.");
 
-            var outputTask = process.StandardOutput.ReadToEndAsync();
-            var errorTask = process.StandardError.ReadToEndAsync();
-
-            var timeoutMs = int.Parse(_configuration["Scraper:TimeoutSeconds"] ?? "1800") * 1000;
+            var timeoutMs = int.Parse(_configuration["Scraper:BankTimeoutSeconds"] ?? "120") * 1000;
             var completed = process.WaitForExit(timeoutMs);
 
-            var output = await outputTask;
-            var error = await errorTask;
+            var output = await process.StandardOutput.ReadToEndAsync();
+            var error = await process.StandardError.ReadToEndAsync();
 
             if (!completed)
             {
                 process.Kill();
-                throw new TimeoutException("Scraper zaman aşımına uğradı.");
+                throw new TimeoutException("Banka scraper zaman aşımına uğradı.");
             }
 
             if (process.ExitCode != 0)
-                throw new InvalidOperationException($"Scraper hata ile sonlandı (kod {process.ExitCode}): {error}");
+                throw new InvalidOperationException($"Banka scraper hata ile sonlandı (kod {process.ExitCode}): {error}");
 
-            _logger.LogInformation("Scraper tamamlandı (JobId={JobId}). Çıktı: {Output}", jobId, output);
+            _logger.LogInformation("Banka scraper tamamlandı (JobId={JobId}). Çıktı: {Output}", jobId, output);
         }
         catch (Exception ex)
         {
@@ -89,7 +82,7 @@ public class PriceCollectionJob : IJob
             job.ErrorMessage = ex.Message;
             _jobRepo.Update(job);
             await _jobRepo.SaveChangesAsync();
-            _logger.LogError(ex, "PriceCollectionJob hata ile sonlandı (JobId={JobId}).", jobId);
+            _logger.LogError(ex, "BankPriceCollectionJob hata ile sonlandı (JobId={JobId}).", jobId);
         }
     }
 }

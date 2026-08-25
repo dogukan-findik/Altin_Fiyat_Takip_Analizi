@@ -11,23 +11,32 @@ public class ReportGeneratorService : IReportService
     private readonly IRepository<Seller> _sellerRepo;
     private readonly IRepository<DailyReport> _reportRepo;
     private readonly IRepository<Product> _productRepo;
+    private readonly IRepository<CollectionJob> _jobRepo;
 
     public ReportGeneratorService(
         IPriceComparisonService comparisonService,
         IRepository<Seller> sellerRepo,
         IRepository<DailyReport> reportRepo,
-        IRepository<Product> productRepo)
+        IRepository<Product> productRepo,
+        IRepository<CollectionJob> jobRepo)
     {
         _comparisonService = comparisonService;
         _sellerRepo = sellerRepo;
         _reportRepo = reportRepo;
         _productRepo = productRepo;
+        _jobRepo = jobRepo;
     }
 
     public async Task<DailyReportDto> GenerateDailyReportAsync(DateOnly date)
     {
         var comparisons = await _comparisonService.GetAllComparisonsAsync();
         var activeSellers = (await _sellerRepo.GetAllAsync()).Count(s => s.IsActive);
+
+        // Gün içinde yapılan fiyat toplama job sayısı
+        var dayStart = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var dayEnd = date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var totalCollections = await _jobRepo.GetQueryable()
+            .CountAsync(j => j.StartedAt >= dayStart && j.StartedAt < dayEnd);
 
         foreach (var c in comparisons)
         {
@@ -45,13 +54,7 @@ public class ReportGeneratorService : IReportService
         }
         await _reportRepo.SaveChangesAsync();
 
-        return new DailyReportDto
-        {
-            ReportDate = date,
-            Comparisons = comparisons,
-            TotalProductsTracked = comparisons.Count,
-            TotalSellersActive = activeSellers
-        };
+        return BuildReportDto(date, comparisons, activeSellers, totalCollections);
     }
 
     public async Task<DailyReportDto?> GetReportByDateAsync(DateOnly date)
@@ -80,12 +83,15 @@ public class ReportGeneratorService : IReportService
             CalculatedAt = r.GeneratedAt
         }).ToList();
 
-        return new DailyReportDto
-        {
-            ReportDate = date,
-            Comparisons = comparisons,
-            TotalProductsTracked = comparisons.Count
-        };
+        var activeSellers = (await _sellerRepo.GetAllAsync()).Count(s => s.IsActive);
+
+        // Gün içinde yapılan fiyat toplama job sayısı
+        var dayStart = date.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var dayEnd = date.AddDays(1).ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+        var totalCollections = await _jobRepo.GetQueryable()
+            .CountAsync(j => j.StartedAt >= dayStart && j.StartedAt < dayEnd);
+
+        return BuildReportDto(date, comparisons, activeSellers, totalCollections);
     }
     public async Task<List<DailyReportDto>> GetWeeklySummaryAsync(DateOnly weekEndDate)
     {
@@ -100,5 +106,57 @@ public class ReportGeneratorService : IReportService
         }
 
         return summary;
+    }
+
+    /// <summary>
+    /// Karşılaştırma verilerinden özet istatistiklerle dolu bir DailyReportDto üretir.
+    /// </summary>
+    private static DailyReportDto BuildReportDto(
+        DateOnly date,
+        List<PriceComparisonDto> comparisons,
+        int activeSellers,
+        int totalCollections)
+    {
+        // Sadece rakip verisi olan ürünleri filtrele (CompetitorAvgPrice > 0)
+        var withCompetitorData = comparisons
+            .Where(c => c.CompetitorAvgPrice > 0 && c.OurPrice > 0)
+            .ToList();
+
+        // Fiyat farkı yüzdesi: (OurPrice - CompetitorAvg) / CompetitorAvg * 100
+        var diffPercents = withCompetitorData
+            .Select(c => new
+            {
+                c.ProductName,
+                DiffPercent = c.CompetitorAvgPrice != 0
+                    ? Math.Round((c.OurPrice - c.CompetitorAvgPrice) / c.CompetitorAvgPrice * 100, 2)
+                    : 0m
+            })
+            .ToList();
+
+        int belowAvg = diffPercents.Count(d => d.DiffPercent < 0);
+        int aboveAvg = diffPercents.Count(d => d.DiffPercent > 0);
+        decimal avgDiffPercent = diffPercents.Any()
+            ? Math.Round(diffPercents.Average(d => d.DiffPercent), 2)
+            : 0;
+
+        var cheapest = diffPercents.MinBy(d => d.DiffPercent);
+        var mostExpensive = diffPercents.MaxBy(d => d.DiffPercent);
+
+        return new DailyReportDto
+        {
+            ReportDate = date,
+            Comparisons = comparisons,
+            TotalProductsTracked = comparisons.Count,
+            TotalSellersActive = activeSellers,
+            ProductsBelowAvg = belowAvg,
+            ProductsAboveAvg = aboveAvg,
+            AvgPriceDiffPercent = avgDiffPercent,
+            CheapestProductName = cheapest?.ProductName,
+            CheapestProductDiffPercent = cheapest?.DiffPercent ?? 0,
+            MostExpensiveProductName = mostExpensive?.ProductName,
+            MostExpensiveProductDiffPercent = mostExpensive?.DiffPercent ?? 0,
+            TotalPriceCollections = totalCollections,
+            GeneratedAt = DateTime.UtcNow
+        };
     }
 }

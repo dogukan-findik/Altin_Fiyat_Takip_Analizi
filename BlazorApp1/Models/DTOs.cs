@@ -65,3 +65,20 @@ public class SellerProductBreakdownDto
     public string SellerName { get; set; } = string.Empty;
     public List<SellerProductComparisonDto> Products { get; set; } = new();
 }
+
+public class DailyReportDto
+{
+    public DateTime ReportDate { get; set; }
+    public List<PriceComparisonDto> Comparisons { get; set; } = new();
+    public int TotalProductsTracked { get; set; }
+    public int TotalSellersActive { get; set; }
+    public int ProductsBelowAvg { get; set; }
+    public int ProductsAboveAvg { get; set; }
+    public decimal AvgPriceDiffPercent { get; set; }
+    public string? CheapestProductName { get; set; }
+    public decimal CheapestProductDiffPercent { get; set; }
+    public string? MostExpensiveProductName { get; set; }
+    public decimal MostExpensiveProductDiffPercent { get; set; }
+    public int TotalPriceCollections { get; set; }
+    public DateTime GeneratedAt { get; set; }
+}
