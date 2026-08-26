@@ -1,4 +1,4 @@
-﻿using Altin_Fiyat_Takip_Analizi.Application.Common;
+using Altin_Fiyat_Takip_Analizi.Application.Common;
 using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Exceptions;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
@@ -167,16 +167,17 @@ public class PriceComparisonService : IPriceComparisonService
         return result;
     }
 
-    public async Task<List<SellerProductBreakdownDto>> GetSellerProductBreakdownAsync(SellerType sellerType)
+    public async Task<List<SellerProductBreakdownDto>> GetSellerProductBreakdownAsync(SellerType sellerType, string? platform = null)
     {
         var sellers = await _sellerRepo.GetQueryable()
+            .AsNoTracking()
             .Where(s => s.Type == sellerType && s.IsActive)
             .ToListAsync();
 
         var last24h = DateTime.UtcNow.AddHours(-24);
 
-        // Son 24 saat içindeki tüm fiyatları çek (her sellerProduct için en son fiyat)
-        var latestPrices = await _priceRepo.GetQueryable()
+        var query = _priceRepo.GetQueryable()
+            .AsNoTracking()
             .Include(p => p.SellerProduct)
                 .ThenInclude(sp => sp.Seller)
             .Include(p => p.SellerProduct)
@@ -185,13 +186,28 @@ public class PriceComparisonService : IPriceComparisonService
                         && p.IsAvailable
                         && p.SellerProduct.Seller.Type == sellerType
                         && p.SellerProduct.ProductId != null
-                        && p.SellerProduct.IsMatched)
+                        && p.SellerProduct.IsMatched);
+
+        if (!string.IsNullOrWhiteSpace(platform))
+        {
+            var normalizedPlatform = platform.Trim().ToLowerInvariant();
+            if (normalizedPlatform == "n11")
+                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains("n11.com"));
+            else if (normalizedPlatform == "pttavm")
+                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains("pttavm.com"));
+            else
+                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains(normalizedPlatform));
+        }
+
+        // Son 24 saat içindeki tüm fiyatları çek (her sellerProduct için en son fiyat)
+        var latestPrices = await query
             .GroupBy(p => p.SellerProductId)
             .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
             .ToListAsync();
 
         // OwnPrice'ları toplu çek
         var ownPrices = await _ownPriceRepo.GetQueryable()
+            .AsNoTracking()
             .Where(o => o.SourceType == SellerType.Bank)
             .ToListAsync();
 

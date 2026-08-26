@@ -1,4 +1,4 @@
-
+ï»¿
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Application.Mapping;
 using Altin_Fiyat_Takip_Analizi.Application.Validators;
@@ -13,7 +13,7 @@ using Microsoft.OpenApi.Models;
 using Serilog;
 using System.Text;
 
-// --- Serilog'u en baþta, host bootstrap olmadan önce kur ---
+// --- Serilog'u en baï¿½ta, host bootstrap olmadan ï¿½nce kur ---
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Debug()
     .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Information)
@@ -50,9 +50,12 @@ builder.Services.AddScoped<IAuthService, Altin_Fiyat_Takip_Analizi.Application.S
 builder.Services.AddScoped<ISellerService, Altin_Fiyat_Takip_Analizi.Application.Services.SellerService>();
 builder.Services.AddScoped<ISellerProductService, Altin_Fiyat_Takip_Analizi.Application.Services.SellerProductService>();
 
+// --- Kendi fiyat guncelleme servisi (her 5 dakikada bir sync_own_prices.py calistirir) ---
+builder.Services.AddHostedService<Altin_Fiyat_Takip_Analizi.API.BackgroundServices.OwnPriceSyncBackgroundService>();
+
 // --- JWT Auth ---
 var jwtKey = builder.Configuration["Jwt:Key"]
-    ?? throw new InvalidOperationException("Jwt:Key appsettings.json'da tanýmlý deðil.");
+    ?? throw new InvalidOperationException("Jwt:Key appsettings.json'da tanï¿½mlï¿½ deï¿½il.");
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -79,7 +82,7 @@ builder.Services.AddSwaggerGen(c =>
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Description = "JWT Authorization header. Örnek: \"Bearer {token}\"",
+        Description = "JWT Authorization header. ï¿½rnek: \"Bearer {token}\"",
         Name = "Authorization",
         In = ParameterLocation.Header,
         Type = SecuritySchemeType.ApiKey,

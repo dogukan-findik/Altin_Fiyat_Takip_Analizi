@@ -8,3 +8,4 @@ class ScrapedItem:
     raw_price: str
     raw_availability: str | None = None
     seller_name: str | None = None  # sadece pazaryeri (çoklu satıcı) collector'ları doldurur
+    known_seller_id: int | None = None  # yeni: DB'den zaten biliniyorsa, detay sayfasına gitmeden dolar

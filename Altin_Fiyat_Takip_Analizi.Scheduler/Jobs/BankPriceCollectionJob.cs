@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using Quartz;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Entities;
@@ -58,11 +58,15 @@ public class BankPriceCollectionJob : IJob
             using var process = Process.Start(psi)
                 ?? throw new InvalidOperationException("Banka scraper process başlatılamadı.");
 
+            // Okuma işlemlerini WaitForExit'ten ÖNCE başlatıyoruz — deadlock'ı önlemek için
+            var outputTask = process.StandardOutput.ReadToEndAsync();
+            var errorTask  = process.StandardError.ReadToEndAsync();
+
             var timeoutMs = int.Parse(_configuration["Scraper:BankTimeoutSeconds"] ?? "120") * 1000;
             var completed = process.WaitForExit(timeoutMs);
 
-            var output = await process.StandardOutput.ReadToEndAsync();
-            var error = await process.StandardError.ReadToEndAsync();
+            var output = await outputTask;
+            var error  = await errorTask;
 
             if (!completed)
             {

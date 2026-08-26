@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import time
 import json
 import argparse
@@ -8,6 +8,7 @@ from scraper.collectors.table_row_playwright_collector import TableRowPlaywright
 from scraper.collectors.filtered_table_collector import FilteredTableCollector
 from scraper.collectors.filtered_table_playwright_collector import FilteredTablePlaywrightCollector
 from scraper.collectors.marketplace_listing_collector import MarketplaceListingCollector
+from scraper.collectors.pttavm_listing_collector import PttavmListingCollector
 from scraper.parsers.gold_parser import parse_price, extract_gram_weight, categorize_gold_product
 from scraper.matchers.product_matcher import ProductMatcher
 from scraper.filters.product_filter import ProductFilter
@@ -76,6 +77,7 @@ COLLECTOR_REGISTRY = {
     "filtered_table": FilteredTableCollector,
     "filtered_table_playwright": FilteredTablePlaywrightCollector,
     "marketplace_listing": MarketplaceListingCollector,
+    "pttavm_listing": PttavmListingCollector,
 }
 
 SELLER_ID_MAP: dict[str, int] = {
@@ -105,14 +107,23 @@ BANK_PRODUCT_NAME_MAP: dict[str, dict[str, str]] = {
 }
 
 
-def run(external_job_id: int | None = None):
+def run(external_job_id: int | None = None, seller_filter: str | None = None):
     db = DatabaseManager()
     job_id = external_job_id if external_job_id is not None else db.start_collection_job(job_type="Manual")
 
     processed = success = failed = 0
     error_message = None
 
-    if not SELLERS:
+    sellers_to_run = SELLERS
+    if seller_filter:
+        sellers_to_run = {k: v for k, v in SELLERS.items() if k == seller_filter or seller_filter in k}
+        if not sellers_to_run:
+            logger.error("'%s' filtresine uygun satıcı bulunamadı.", seller_filter)
+            db.complete_collection_job(job_id, 0, 0, 0)
+            print(json.dumps({"processed": 0, "success": 0, "failed": 0}))
+            return
+
+    if not sellers_to_run:
         logger.warning("SELLERS config'i boş — henüz hiçbir satıcı tanımlanmamış.")
         db.complete_collection_job(job_id, 0, 0, 0)
         print(json.dumps({"processed": 0, "success": 0, "failed": 0}))
@@ -127,7 +138,7 @@ def run(external_job_id: int | None = None):
         logger.info("%d takı ürününün Çeyrek Altın eşlemesi kaldırıldı.", unmatched_jewelry)
 
     try:
-        for seller_key, seller_config in SELLERS.items():
+        for seller_key, seller_config in sellers_to_run.items():
             collector_type = seller_config.get("collector_type")
             collector_cls = COLLECTOR_REGISTRY.get(collector_type)
             if collector_cls is None:
@@ -142,7 +153,7 @@ def run(external_job_id: int | None = None):
                 logger.error("'%s' için toplama başarısız: %s", seller_key, exc)
                 continue
 
-            if collector_type == "marketplace_listing":
+            if collector_type in ("marketplace_listing", "pttavm_listing"):
                 for item in scraped_items:
                     processed += 1
 
@@ -271,6 +282,7 @@ def run(external_job_id: int | None = None):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--job-id", type=int, default=None)
+    parser.add_argument("--job-id", type=int, default=None, help="CollectionJob ID")
+    parser.add_argument("--seller", type=str, default=None, help="Belirli bir satıcıyı/pazaryerini çalıştırmak için (ör: pttavm_altin, n11_bilezik)")
     args = parser.parse_args()
-    run(external_job_id=args.job_id)
+    run(external_job_id=args.job_id, seller_filter=args.seller)

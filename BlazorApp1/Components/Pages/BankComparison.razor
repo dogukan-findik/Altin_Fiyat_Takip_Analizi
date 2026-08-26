@@ -1,17 +1,35 @@
-﻿@page "/banka-karsilastirma"
+@page "/banka-karsilastirma"
 @using Altin_Fiyat_Takip_Analizi.Web.Models
 @using Altin_Fiyat_Takip_Analizi.Web.Services
+@implements IDisposable
 @inject ApiService Api
 @inject NavigationManager Nav
 
 <PageTitle>Banka Karşılaştırma</PageTitle>
 
 <div class="container-fluid py-3">
-    <div class="d-flex align-items-center mb-4">
-        <span style="font-size:2rem" class="me-3">🏦</span>
-        <div>
-            <h2 class="mb-0 fw-bold">Banka Altın Fiyatları</h2>
-            <p class="text-muted mb-0">QNB Finans, Garanti ve Yapı Kredi bankalarının altın fiyatları, bizim fiyatlarımızla karşılaştırılıyor.</p>
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div class="d-flex align-items-center">
+            <span style="font-size:2rem" class="me-3">🏦</span>
+            <div>
+                <h2 class="mb-0 fw-bold">Banka Altın Fiyatları</h2>
+                <p class="text-muted mb-0">QNB Finans, Garanti ve Yapı Kredi bankalarının altın fiyatları, bizim fiyatlarımızla karşılaştırılıyor.</p>
+            </div>
+        </div>
+        <div class="text-end">
+            @if (_lastUpdated.HasValue)
+            {
+                <small class="text-muted d-block">
+                    <i class="bi bi-clock me-1"></i>Son güncelleme: @_lastUpdated.Value.ToString("HH:mm:ss")
+                </small>
+            }
+            <small class="text-muted d-block">
+                <i class="bi bi-arrow-repeat me-1"></i>Her 5 dakikada otomatik yenilenir
+            </small>
+            @if (_refreshing)
+            {
+                <span class="badge bg-info text-dark mt-1"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Yenileniyor...</span>
+            }
         </div>
     </div>
 
@@ -167,6 +185,9 @@
 @code {
     private List<ProductSellerBreakdownDto>? _breakdown;
     private bool _loading = true;
+    private bool _refreshing = false;
+    private DateTime? _lastUpdated;
+    private System.Threading.Timer? _refreshTimer;
 
     // Sadece gerçek banka isimleri - diğer satıcılar banka sayfasında gösterilmeyecek
     private static readonly HashSet<string> BankNames = new(StringComparer.OrdinalIgnoreCase)
@@ -198,8 +219,21 @@
             return;
         }
 
+        await LoadDataAsync();
+        _loading = false;
+
+        // 5 dakikada bir otomatik yenile (ilk tetikleme 5 dakika sonra)
+        _refreshTimer = new System.Threading.Timer(
+            async _ => await InvokeAsync(RefreshDataAsync),
+            null,
+            TimeSpan.FromMinutes(5),
+            TimeSpan.FromMinutes(5));
+    }
+
+    private async Task LoadDataAsync()
+    {
         var raw = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=Bank");
-        
+
         if (raw != null)
         {
             // Sadece banka isimlerini filtrele
@@ -209,8 +243,9 @@
                     .Where(sp => BankNames.Any(bn => sp.SellerName.Contains(bn, StringComparison.OrdinalIgnoreCase)))
                     .ToList();
             }
-            
+
             _breakdown = raw;
+            _lastUpdated = DateTime.Now;
 
             // İstatistik hesapla
             var allPrices = raw.SelectMany(p => p.SellerPrices).Where(sp => sp.DiffFromOurs.HasValue);
@@ -218,8 +253,24 @@
             _expensiveCount = allPrices.Count(sp => sp.DiffFromOurs < 0);
             _equalCount = allPrices.Count(sp => sp.DiffFromOurs == 0);
         }
+    }
 
-        _loading = false;
+    private async Task RefreshDataAsync()
+    {
+        if (!Api.IsAuthenticated) return;
+
+        _refreshing = true;
+        StateHasChanged();
+
+        await LoadDataAsync();
+
+        _refreshing = false;
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _refreshTimer?.Dispose();
     }
 
     /// <summary>

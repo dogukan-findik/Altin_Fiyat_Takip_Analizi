@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Headers;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace Altin_Fiyat_Takip_Analizi.Web.Services;
@@ -6,42 +6,52 @@ namespace Altin_Fiyat_Takip_Analizi.Web.Services;
 public class ApiService
 {
     private readonly HttpClient _http;
-    private string? _token;
+    private readonly AuthTokenStore _tokenStore;
 
     public event Action? AuthStateChanged;
 
-    public string? CurrentUsername { get; private set; }
-    public string? CurrentRole { get; private set; }
+    public string? CurrentUsername => _tokenStore.Username;
+    public string? CurrentRole    => _tokenStore.Role;
 
-    public void SetCurrentUser(string username, string role)
-    {
-        CurrentUsername = username;
-        CurrentRole = role;
-        AuthStateChanged?.Invoke();
-    }
-    
-
-    public ApiService(HttpClient http)
+    public ApiService(HttpClient http, AuthTokenStore tokenStore)
     {
         _http = http;
+        _tokenStore = tokenStore;
+
+        // Store değiştiğinde Authorization header'ı senkronize tut
+        _tokenStore.TokenChanged += SyncAuthHeader;
+        SyncAuthHeader();
     }
 
-    public bool IsAuthenticated => _token is not null;
+    private void SyncAuthHeader()
+    {
+        if (!string.IsNullOrEmpty(_tokenStore.Token))
+            _http.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", _tokenStore.Token);
+        else
+            _http.DefaultRequestHeaders.Authorization = null;
+
+        AuthStateChanged?.Invoke();
+    }
+
+    public bool IsAuthenticated => _tokenStore.IsAuthenticated;
 
     public void SetToken(string token)
     {
-        _token = token;
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        _tokenStore.Token = token;
+        // SyncAuthHeader tokenChanged olayı üzerinden çağrılır
+    }
+
+    public void SetCurrentUser(string username, string role)
+    {
+        _tokenStore.Username = username;
+        _tokenStore.Role     = role;
         AuthStateChanged?.Invoke();
     }
 
     public void ClearToken()
     {
-        _token = null;
-        _http.DefaultRequestHeaders.Authorization = null;
-        CurrentUsername = null;
-        CurrentRole = null;
-        AuthStateChanged?.Invoke();
+        _tokenStore.Clear();
     }
 
     public async Task<T?> GetAsync<T>(string endpoint)
@@ -76,4 +86,4 @@ public class ApiService
         if (!response.IsSuccessStatusCode) return default;
         return await response.Content.ReadFromJsonAsync<TResponse>();
     }
-}
+}

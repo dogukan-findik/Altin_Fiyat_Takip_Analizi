@@ -1,0 +1,26 @@
+
+            (function(_, A, t, h, e, n, a) {
+                _['_ATHENA'] = e;
+                _[e] = _[e] || function() { (_[e].q = _[e].q || []).push(arguments) };
+                _[e].l = 1 * new Date();
+                n = A.createElement(t);
+                n.async = 1;
+                n.src = "https://n11scdn.akamaized.net/custom/athena/athena.2daeaaf02ae.js";
+                a = A.getElementsByTagName(t)[0];
+                a.parentNode.insertBefore(n, a);
+            })(window, document, 'script', "https://n11scdn.akamaized.net/custom/athena/athena.2daeaaf02ae.js", 'athena');
+
+            athena('init', 'MWEB', {
+                defaultApp: 'n11',
+                apiUrl: "https://athena-event-provider.n11.com/events"
+            });
+
+            athena('setCallback', function(e) {
+                if (["addToCart", "productView", "order"].includes(e.eventName)) {
+                    dataLayer.push({
+                        eventID: e.eventId,
+                        event: "eventidfacebook-" + e.eventName
+                    });
+                }
+            });
+            

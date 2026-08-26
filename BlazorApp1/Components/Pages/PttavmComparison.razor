@@ -1,19 +1,19 @@
-@page "/pazaryeri-karsilastirma"
+@page "/pttavm-karsilastirma"
 @using Altin_Fiyat_Takip_Analizi.Web.Models
 @using Altin_Fiyat_Takip_Analizi.Web.Services
 @implements IDisposable
 @inject ApiService Api
 @inject NavigationManager Nav
 
-<PageTitle>Pazaryeri Karşılaştırma</PageTitle>
+<PageTitle>PTTAVM Pazaryeri Karşılaştırma</PageTitle>
 
 <div class="container-fluid py-3">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center">
-            <span style="font-size:2rem" class="me-3">🏪</span>
+            <span style="font-size:2rem" class="me-3">📦</span>
             <div>
-                <h2 class="mb-0 fw-bold">N11 Pazaryeri Karşılaştırma</h2>
-                <p class="text-muted mb-0">N11'deki tüm satıcıların ürünleri, bizim fiyatlarımızla ürün bazlı karşılaştırılıyor.</p>
+                <h2 class="mb-0 fw-bold">PTTAVM Pazaryeri Karşılaştırma</h2>
+                <p class="text-muted mb-0">PTTAVM'deki altın satıcılarının ürünleri, bizim mağaza fiyatlarımızla karşılaştırılıyor.</p>
             </div>
         </div>
         <div class="text-end">
@@ -28,7 +28,9 @@
             </small>
             @if (_refreshing)
             {
-                <span class="badge bg-info text-dark mt-1"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Yenileniyor...</span>
+                <span class="badge bg-warning text-dark mt-1">
+                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>Yenileniyor...
+                </span>
             }
         </div>
     </div>
@@ -43,17 +45,17 @@
     else if (_loading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <div class="spinner-border text-warning" role="status" style="width: 3rem; height: 3rem;">
                 <span class="visually-hidden">Yükleniyor...</span>
             </div>
-            <p class="text-muted mt-3">Pazaryeri verileri yükleniyor...</p>
+            <p class="text-muted mt-3">PTTAVM verileri yükleniyor...</p>
         </div>
     }
     else if (_sellers is null || _sellers.Count == 0)
     {
         <div class="alert alert-info d-flex align-items-center">
             <span class="me-2">ℹ️</span>
-            <span>Henüz pazaryeri karşılaştırma verisi bulunmuyor.</span>
+            <span>Henüz PTTAVM karşılaştırma verisi bulunmuyor veya tarama işlemi devam ediyor.</span>
         </div>
     }
     else
@@ -61,7 +63,7 @@
         @* Genel Özet Kartları *@
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
                     <div class="card-body text-white text-center">
                         <h6 class="mb-1 opacity-75">Toplam Satıcı</h6>
                         <h2 class="fw-bold mb-0">@_sellers.Count</h2>
@@ -69,7 +71,7 @@
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);">
                     <div class="card-body text-white text-center">
                         <h6 class="mb-1 opacity-75">Toplam Ürün</h6>
                         <h2 class="fw-bold mb-0">@_totalProducts</h2>
@@ -118,13 +120,13 @@
 
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header border-0 py-3"
-                     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
+                     style="background: linear-gradient(135deg, #112d4e 0%, #1a365d 100%); color: white;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <span style="font-size:1.5rem" class="me-2">🏬</span>
+                            <span style="font-size:1.5rem" class="me-2">🏪</span>
                             <div>
                                 <h5 class="mb-0 fw-bold">@seller.SellerName</h5>
-                                <small class="opacity-75">@seller.Products.Count ürün takip ediliyor</small>
+                                <small class="opacity-75">@seller.Products.Count ürün takip ediliyor (PTTAVM)</small>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
@@ -148,7 +150,7 @@
                             <thead style="background-color: #f8f9fa;">
                                 <tr>
                                     <th class="ps-4" style="width: 28%">
-                                        <span class="text-muted">📦 N11 Ürün Adı</span>
+                                        <span class="text-muted">📦 PTTAVM Ürün Adı</span>
                                     </th>
                                     <th style="width: 14%" class="text-end">
                                         <span class="text-muted">Satıcı Fiyatı</span>
@@ -182,7 +184,7 @@
                                             {
                                                 <a href="@product.ExternalUrl" target="_blank" class="text-decoration-none text-dark fw-semibold">
                                                     @product.ExternalProductName
-                                                    <small class="text-primary ms-1">🔗</small>
+                                                    <small class="text-warning ms-1">🔗</small>
                                                 </a>
                                             }
                                             else
@@ -194,7 +196,7 @@
                                             @FormatPrice(product.SellerPrice) ₺
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge rounded-pill px-3 py-1" style="background-color: #e3f2fd; color: #1565c0; font-size: 0.82rem;">
+                                            <span class="badge rounded-pill px-3 py-1" style="background-color: #fff3cd; color: #856404; font-size: 0.82rem;">
                                                 @product.MatchedProductName
                                             </span>
                                         </td>
@@ -268,7 +270,7 @@
 
     private async Task LoadDataAsync()
     {
-        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>("api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=n11");
+        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>("api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=pttavm");
 
         if (data != null)
         {

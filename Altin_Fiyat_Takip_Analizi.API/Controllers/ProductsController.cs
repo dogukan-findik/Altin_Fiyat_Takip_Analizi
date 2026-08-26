@@ -1,4 +1,4 @@
-﻿using Altin_Fiyat_Takip_Analizi.Application.DTOs;
+using Altin_Fiyat_Takip_Analizi.Application.DTOs;
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Domain.Enums;
 using Microsoft.AspNetCore.Authorization;
@@ -75,8 +75,10 @@ public class ProductsController : ControllerBase
     => Ok(await _comparisonService.GetSellerBreakdownAsync(sellerType));
 
     [HttpGet("seller-product-breakdown")]
-    public async Task<ActionResult<List<SellerProductBreakdownDto>>> SellerProductBreakdown([FromQuery] SellerType sellerType)
-    => Ok(await _comparisonService.GetSellerProductBreakdownAsync(sellerType));
+    public async Task<ActionResult<List<SellerProductBreakdownDto>>> SellerProductBreakdown(
+        [FromQuery] SellerType sellerType,
+        [FromQuery] string? platform = null)
+        => Ok(await _comparisonService.GetSellerProductBreakdownAsync(sellerType, platform));
 
 }
 
