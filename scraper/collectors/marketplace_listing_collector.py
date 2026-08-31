@@ -14,12 +14,8 @@ logger = get_logger(__name__)
 
 class MarketplaceListingCollector:
     """N11 gibi pazaryerlerinde kategori sayfalarındaki tüm ürünleri
-    pagination ile çeker.
-    
-    Sayfa içindeki window.model JSON'unda her ürünün başlığı, indirimli fiyatı,
-    linki ve GERÇEK SATICI ADI (sellerNickName) doğrudan yer alır.
-    Bu sayede detay sayfalarına tek tek girmeye gerek kalmadan saniyeler içinde
-    tüm liste eksiksiz toplanır."""
+    pagination ile çekiliyor.
+    """
 
     def __init__(self, seller_config: dict):
         self.base_url = seller_config["base_url"]

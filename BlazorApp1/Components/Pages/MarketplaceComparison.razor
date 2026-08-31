@@ -5,7 +5,7 @@
 @inject ApiService Api
 @inject NavigationManager Nav
 
-<PageTitle>Pazaryeri Karşılaştırma</PageTitle>
+<PageTitle>N11 Pazaryeri Karşılaştırma</PageTitle>
 
 <div class="container-fluid py-3">
     <div class="d-flex align-items-center justify-content-between mb-4">
@@ -58,43 +58,76 @@
     }
     else
     {
-        @* Genel Özet Kartları *@
+        @* Genel Özet Kartları - Tıklanabilir Filtreleme *@
         <div class="row mb-4">
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
+                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; transition: all 0.25s ease;"
+                     @onclick="@(() => ToggleFilter("all"))">
                     <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Toplam Satıcı</h6>
+                        <div class="d-flex justify-content-center align-items-center mb-1">
+                            <h6 class="mb-0 opacity-75">Toplam Satıcı</h6>
+                            @if (_activeFilter == "all")
+                            {
+                                <span class="badge bg-light text-dark ms-2" style="font-size:0.7rem;">Seçili</span>
+                            }
+                        </div>
                         <h2 class="fw-bold mb-0">@_sellers.Count</h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
+                     style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); cursor: pointer; transition: all 0.25s ease;"
+                     @onclick="@(() => ToggleFilter("all"))">
                     <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Toplam Ürün</h6>
+                        <div class="d-flex justify-content-center align-items-center mb-1">
+                            <h6 class="mb-0 opacity-75">Toplam Ürün</h6>
+                            @if (_activeFilter == "all")
+                            {
+                                <span class="badge bg-light text-dark ms-2" style="font-size:0.7rem;">Seçili</span>
+                            }
+                        </div>
                         <h2 class="fw-bold mb-0">@_totalProducts</h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "cheaper" ? "filter-active-cheaper" : "")"
+                     style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); cursor: pointer; transition: all 0.25s ease;"
+                     @onclick="@(() => ToggleFilter("cheaper"))">
                     <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Biz Ucuzuz</h6>
+                        <div class="d-flex justify-content-center align-items-center mb-1">
+                            <h6 class="mb-0 opacity-75">Biz Ucuzuz</h6>
+                            @if (_activeFilter == "cheaper")
+                            {
+                                <span class="badge bg-light text-success ms-2" style="font-size:0.7rem;">Seçili</span>
+                            }
+                        </div>
                         <h2 class="fw-bold mb-0">@_cheaperCount</h2>
                     </div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);">
+                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "expensive" ? "filter-active-expensive" : "")"
+                     style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); cursor: pointer; transition: all 0.25s ease;"
+                     @onclick="@(() => ToggleFilter("expensive"))">
                     <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Biz Pahalıyız</h6>
+                        <div class="d-flex justify-content-center align-items-center mb-1">
+                            <h6 class="mb-0 opacity-75">Biz Pahalıyız</h6>
+                            @if (_activeFilter == "expensive")
+                            {
+                                <span class="badge bg-light text-danger ms-2" style="font-size:0.7rem;">Seçili</span>
+                            }
+                        </div>
                         <h2 class="fw-bold mb-0">@_expensiveCount</h2>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="mb-3 d-flex align-items-center justify-content-between">
+        @* Aktif Filtre Bilgilendirme ve Hızlı Temizleme *@
+        <div class="mb-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
             <div class="d-flex align-items-center gap-3">
                 <span class="d-flex align-items-center gap-1">
                     <span class="d-inline-block rounded" style="width:14px;height:14px;background-color: rgba(40, 167, 69, 0.15);border: 1px solid #28a745;"></span>
@@ -105,9 +138,114 @@
                     <small class="text-muted">Biz daha pahalıyız</small>
                 </span>
             </div>
+
+            @if (_activeFilter != "all")
+            {
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge @(_activeFilter == "expensive" ? "bg-danger" : "bg-success") px-3 py-2">
+                        Filtre: @(_activeFilter == "expensive" ? "⚠️ Yalnızca Bizim Pahalı Olduğumuz Ürünler" : "✅ Yalnızca Bizim Ucuz Olduğumuz Ürünler")
+                    </span>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="@(() => SetFilter("all"))">
+                        <i class="bi bi-x-circle me-1"></i>Tümünü Göster
+                    </button>
+                </div>
+            }
         </div>
 
-        @foreach (var seller in _sellers)
+        @* ÖZEL BÖLÜM: BİZ PAHALIYIZ SEÇİLDİĞİNDE EN YÜKSEK FİYAT FARKLARI TOPLU ÖZET LİSTESİ *@
+        @if (_activeFilter == "expensive")
+        {
+            var expensiveList = _sellers.SelectMany(s => s.Products.Where(p => p.PriceDiff > 0).Select(p => new { Seller = s.SellerName, Product = p }))
+                                        .OrderByDescending(x => x.Product.PriceDiff)
+                                        .ToList();
+
+            <div class="card mb-4 border-danger shadow-sm" style="border-width: 2px;">
+                <div class="card-header bg-danger text-white py-3 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <span style="font-size:1.5rem" class="me-2">⚠️</span>
+                        <div>
+                            <h5 class="mb-0 fw-bold">Pahalı Olduğumuz Ürünler Listesi</h5>
+                            <small class="opacity-75">Bizim fiyatımızın N11 satıcılarından daha yüksek olduğu toplam @expensiveList.Count ürün listeleniyor.</small>
+                        </div>
+                    </div>
+                    <span class="badge bg-light text-danger fw-bold fs-6 px-3 py-2">@expensiveList.Count Ürün</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0 align-middle" style="font-size: 0.92rem;">
+                            <thead style="background-color: #fff5f5;">
+                                <tr>
+                                    <th class="ps-4" style="width: 22%">🏢 Satıcı / Mağaza</th>
+                                    <th style="width: 26%">📦 N11 Ürün Adı</th>
+                                    <th style="width: 14%" class="text-end">Satıcı Fiyatı</th>
+                                    <th style="width: 14%" class="text-end">Bizim Fiyat</th>
+                                    <th style="width: 12%" class="text-end">Pahalı Olduğumuz Fark</th>
+                                    <th style="width: 12%" class="text-center">Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in expensiveList)
+                                {
+                                    <tr style="background-color: rgba(220, 53, 69, 0.04);">
+                                        <td class="ps-4 fw-bold text-dark">
+                                            <span class="badge bg-dark text-white me-1">N11</span>
+                                            @item.Seller
+                                        </td>
+                                        <td>
+                                            @if (!string.IsNullOrEmpty(item.Product.ExternalUrl))
+                                            {
+                                                <a href="@item.Product.ExternalUrl" target="_blank" class="text-decoration-none text-dark fw-semibold">
+                                                    @item.Product.ExternalProductName
+                                                    <small class="text-primary ms-1">🔗</small>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="fw-semibold">@item.Product.ExternalProductName</span>
+                                            }
+                                            <div class="text-muted" style="font-size:0.75rem;">
+                                                Eşleşen: <span class="badge bg-light text-dark border">@item.Product.MatchedProductName</span>
+                                            </div>
+                                        </td>
+                                        <td class="text-end fw-bold" style="font-size: 1.02rem;">
+                                            @FormatPrice(item.Product.SellerPrice) ₺
+                                        </td>
+                                        <td class="text-end fw-bold text-danger" style="font-size: 1.02rem;">
+                                            @FormatPrice(item.Product.OurPrice) ₺
+                                        </td>
+                                        <td class="text-end fw-bold text-danger">
+                                            +@FormatPrice(item.Product.PriceDiff) ₺
+                                            <br />
+                                            <small class="text-danger fw-normal">
+                                                (+@item.Product.PriceDiffPercent.ToString("N1")%)
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge rounded-pill px-3 py-2" style="background-color: #f8d7da; color: #721c24; font-size: 0.78rem;">
+                                                ⚠️ Pahalıyız
+                                            </span>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @* Satıcı Bazlı Detay Listesi *@
+        var displayedSellers = GetFilteredSellers();
+
+        @if (!displayedSellers.Any())
+        {
+            <div class="alert alert-info text-center py-4">
+                <span style="font-size: 1.5rem;" class="d-block mb-2">🔍</span>
+                <span>Seçilen filtre kriterine uygun satıcı veya ürün bulunamadı.</span>
+            </div>
+        }
+
+        @foreach (var seller in displayedSellers)
         {
             var sellerCheaper = seller.Products.Count(p => p.PriceDiff < 0);
             var sellerExpensive = seller.Products.Count(p => p.PriceDiff > 0);
@@ -115,6 +253,8 @@
             var sellerScore = seller.Products.Count > 0
                 ? (sellerCheaper * 100.0 / seller.Products.Count)
                 : 0;
+
+            var filteredProducts = GetFilteredProducts(seller.Products);
 
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header border-0 py-3"
@@ -124,7 +264,20 @@
                             <span style="font-size:1.5rem" class="me-2">🏬</span>
                             <div>
                                 <h5 class="mb-0 fw-bold">@seller.SellerName</h5>
-                                <small class="opacity-75">@seller.Products.Count ürün takip ediliyor</small>
+                                <small class="opacity-75">
+                                    @if (_activeFilter == "expensive")
+                                    {
+                                        <span class="text-danger fw-semibold">@filteredProducts.Count pahalı ürün gösteriliyor</span>
+                                    }
+                                    else if (_activeFilter == "cheaper")
+                                    {
+                                        <span class="text-success fw-semibold">@filteredProducts.Count ucuz ürün gösteriliyor</span>
+                                    }
+                                    else
+                                    {
+                                        <span>@seller.Products.Count ürün takip ediliyor</span>
+                                    }
+                                </small>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
@@ -168,7 +321,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach (var product in seller.Products)
+                                @foreach (var product in filteredProducts)
                                 {
                                     var isOurCheaper = product.PriceDiff < 0;
                                     var isOurExpensive = product.PriceDiff > 0;
@@ -237,6 +390,25 @@
     }
 </div>
 
+<style>
+    .filter-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 18px rgba(0,0,0,0.15) !important;
+    }
+    .filter-active-expensive {
+        transform: translateY(-4px);
+        box-shadow: 0 0 0 4px rgba(220, 53, 69, 0.4), 0 10px 22px rgba(220, 53, 69, 0.3) !important;
+    }
+    .filter-active-cheaper {
+        transform: translateY(-4px);
+        box-shadow: 0 0 0 4px rgba(40, 167, 69, 0.4), 0 10px 22px rgba(40, 167, 69, 0.3) !important;
+    }
+    .filter-active-all {
+        transform: translateY(-4px);
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.4), 0 10px 22px rgba(102, 126, 234, 0.3) !important;
+    }
+</style>
+
 @code {
     private List<SellerProductBreakdownDto>? _sellers;
     private bool _loading = true;
@@ -246,6 +418,7 @@
     private int _expensiveCount;
     private DateTime? _lastUpdated;
     private System.Threading.Timer? _refreshTimer;
+    private string _activeFilter = "all"; // "all", "cheaper", "expensive"
 
     protected override async Task OnInitializedAsync()
     {
@@ -264,6 +437,43 @@
             null,
             TimeSpan.FromMinutes(5),
             TimeSpan.FromMinutes(5));
+    }
+
+    private void ToggleFilter(string filter)
+    {
+        if (_activeFilter == filter && filter != "all")
+            _activeFilter = "all";
+        else
+            _activeFilter = filter;
+    }
+
+    private void SetFilter(string filter)
+    {
+        _activeFilter = filter;
+    }
+
+    private List<SellerProductBreakdownDto> GetFilteredSellers()
+    {
+        if (_sellers == null) return new List<SellerProductBreakdownDto>();
+
+        if (_activeFilter == "expensive")
+            return _sellers.Where(s => s.Products.Any(p => p.PriceDiff > 0)).ToList();
+        
+        if (_activeFilter == "cheaper")
+            return _sellers.Where(s => s.Products.Any(p => p.PriceDiff < 0)).ToList();
+
+        return _sellers;
+    }
+
+    private List<SellerProductComparisonDto> GetFilteredProducts(List<SellerProductComparisonDto> products)
+    {
+        if (_activeFilter == "expensive")
+            return products.Where(p => p.PriceDiff > 0).ToList();
+
+        if (_activeFilter == "cheaper")
+            return products.Where(p => p.PriceDiff < 0).ToList();
+
+        return products;
     }
 
     private async Task LoadDataAsync()

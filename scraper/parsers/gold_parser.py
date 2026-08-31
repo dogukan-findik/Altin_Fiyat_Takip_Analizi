@@ -14,10 +14,7 @@ _MIN_PLAUSIBLE_LISTING_PRICE = 100.0
 
 
 def parse_price(raw_price: str) -> float | None:
-    """'12.450,75 TL', '12450.75', '₺12.450,75' gibi farklı formatlardan
-    ondalık fiyat çıkarır. Parse edilemeyen değerler için None döner
-    (asla tahmini/uydurma bir sayı üretmez — çağıran taraf None'ı
-    'bu kaydı atla' sinyali olarak yorumlamalı)."""
+    """fiyatları uygun şekilde parse eder"""
     if not raw_price:
         return None
 
@@ -128,15 +125,9 @@ def extract_bracelet_category(text: str) -> str | None:
 def categorize_gold_product(text: str, base_product_name: str) -> str | None:
     """Ürün başlığından ve temel ürün tipinden gram bazlı kategori oluşturur.
     
-    Bilezikler için: gram ağırlığına göre ayrı kategoriler oluşturur.
-    Gram Altın için: gram ağırlığına göre ayrı kategoriler oluşturur.
-    Diğer ürünler için: temel ürün adını döndürür.
+    Bilezikler için: gram ağırlığına göre ayrı kategoriler oluşturulacak.
+    Gram Altın için: gram ağırlığına göre ayrı kategoriler oluşturulacak.
     
-    Örnekler:
-    - '5 Gram 22 Ayar Bilezik' + '22 Ayar Bilezik' -> '5 Gram Bilezik'
-    - '10 Gram Külçe Altın' + 'Gram Altın' -> '10 Gram Altın'
-    - '5 Gram 24 Ayar' + 'Gram Altın' -> '5 Gram Altın'
-    - 'Tam Altın' + 'Tam Altın' -> 'Tam Altın'
     """
     
     if "bilezik" in base_product_name.lower():
