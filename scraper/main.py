@@ -9,6 +9,7 @@ from scraper.collectors.filtered_table_collector import FilteredTableCollector
 from scraper.collectors.filtered_table_playwright_collector import FilteredTablePlaywrightCollector
 from scraper.collectors.marketplace_listing_collector import MarketplaceListingCollector
 from scraper.collectors.pttavm_listing_collector import PttavmListingCollector
+from scraper.collectors.pazarama_listing_collector import PazaramaListingCollector
 from scraper.parsers.gold_parser import parse_price, extract_gram_weight, categorize_gold_product
 from scraper.matchers.product_matcher import ProductMatcher
 from scraper.filters.product_filter import ProductFilter
@@ -78,6 +79,7 @@ COLLECTOR_REGISTRY = {
     "filtered_table_playwright": FilteredTablePlaywrightCollector,
     "marketplace_listing": MarketplaceListingCollector,
     "pttavm_listing": PttavmListingCollector,
+    "pazarama_listing": PazaramaListingCollector,
 }
 
 SELLER_ID_MAP: dict[str, int] = {
@@ -113,6 +115,9 @@ def run(external_job_id: int | None = None, seller_filter: str | None = None):
 
     processed = success = failed = 0
     error_message = None
+
+    sellers_cache: dict[str, int] = {}
+    seller_products_cache: dict[tuple[int, str], int] = {}
 
     sellers_to_run = SELLERS
     if seller_filter:
@@ -153,7 +158,7 @@ def run(external_job_id: int | None = None, seller_filter: str | None = None):
                 logger.error("'%s' için toplama başarısız: %s", seller_key, exc)
                 continue
 
-            if collector_type in ("marketplace_listing", "pttavm_listing"):
+            if collector_type in ("marketplace_listing", "pttavm_listing", "pazarama_listing"):
                 for item in scraped_items:
                     processed += 1
 
@@ -211,12 +216,15 @@ def run(external_job_id: int | None = None, seller_filter: str | None = None):
                     # 7. Ürünü veritabanına kaydet
                     product_id = product_map.get(final_product_name)
                     
-                    # Bilezik ve Gram Altın için otomatik ürün oluşturma
+                    # Bilezik, Gram Altın, Çoklu Paketler ve Özel Sarrafiye için otomatik ürün oluşturma
                     if product_id is None and "Gram Bilezik" in final_product_name:
                         product_id = db.ensure_bracelet_product(final_product_name)
                         product_map[final_product_name] = product_id
                     elif product_id is None and "Gram Altın" in final_product_name:
                         product_id = db.ensure_gram_gold_product(final_product_name)
+                        product_map[final_product_name] = product_id
+                    elif product_id is None and (" Adet " in final_product_name or final_product_name in ("Gremse Altın", "Beşli Altın")):
+                        product_id = db.ensure_multi_pack_or_special_product(final_product_name)
                         product_map[final_product_name] = product_id
                     
                     if product_id is None:
@@ -230,11 +238,21 @@ def run(external_job_id: int | None = None, seller_filter: str | None = None):
                     # Gram Altın için: eğer doğru gram kategorisi yoksa, 1g fiyatıyla hesapla
                     final_price = price
 
-                    seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"], seller_type="Marketplace")
-                    sp_id = db.get_or_create_seller_product(
-                        seller_id, item.external_name, item.external_url, item.external_id,
-                        product_id=product_id
-                    )
+                    # Satıcı ve satıcı ürünü önbelleği ile anlık ultra-hızlı kayıt
+                    seller_id = sellers_cache.get(item.seller_name)
+                    if not seller_id:
+                        seller_id = db.get_or_create_seller(item.seller_name, seller_config["base_url"], seller_type="Marketplace")
+                        sellers_cache[item.seller_name] = seller_id
+
+                    sp_cache_key = (seller_id, item.external_id or item.external_name)
+                    sp_id = seller_products_cache.get(sp_cache_key)
+                    if not sp_id:
+                        sp_id = db.get_or_create_seller_product(
+                            seller_id, item.external_name, item.external_url, item.external_id,
+                            product_id=product_id
+                        )
+                        seller_products_cache[sp_cache_key] = sp_id
+
                     db.insert_price(sp_id, final_price, True, collection_job_id=job_id)
                     success += 1
                     logger.info("Ürün kaydedildi: '%s' -> '%s' (%.2f TL)",
@@ -265,7 +283,7 @@ def run(external_job_id: int | None = None, seller_filter: str | None = None):
                     db.insert_price(sp_id, price, True, collection_job_id=job_id)
                     success += 1
 
-            time.sleep(RATE_LIMIT_SECONDS)
+            time.sleep(0.5)
 
         db.complete_collection_job(job_id, processed, success, failed)
 

@@ -16,24 +16,44 @@
                 <p class="text-muted mb-0">PTTAVM'deki altın satıcılarının ürünleri, bizim mağaza fiyatlarımızla karşılaştırılıyor.</p>
             </div>
         </div>
-        <div class="text-end">
-            @if (_lastUpdated.HasValue)
-            {
-                <small class="text-muted d-block">
-                    <i class="bi bi-clock me-1"></i>Son güncelleme: @_lastUpdated.Value.ToString("HH:mm:ss")
-                </small>
-            }
-            <small class="text-muted d-block">
-                <i class="bi bi-arrow-repeat me-1"></i>Her 5 dakikada otomatik yenilenir
-            </small>
-            @if (_refreshing)
-            {
-                <span class="badge bg-warning text-dark mt-1">
-                    <span class="spinner-border spinner-border-sm me-1" role="status"></span>Yenileniyor...
-                </span>
-            }
+            <div class="d-flex flex-column align-items-end gap-1">
+                @if (_lastUpdated.HasValue)
+                {
+                    <small class="text-muted">
+                        <i class="bi bi-clock me-1"></i>Son Veri: @_lastUpdated.Value.ToString("HH:mm:ss")
+                    </small>
+                }
+                <div class="d-flex align-items-center gap-2 mt-1">
+                    @if (_isPlatformScraping)
+                    {
+                        <span class="badge bg-warning text-dark border border-warning px-2 py-1" style="font-size: 0.78rem;">
+                            <span class="spinner-border spinner-border-sm me-1 text-dark" role="status"></span>
+                            ⚡ Canlı Taranıyor...
+                        </span>
+                    }
+                    else if (_lastLoadedScrapedAt.HasValue)
+                    {
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.78rem;">
+                            <i class="bi bi-check2-circle me-1"></i>Son Tarama: @_lastLoadedScrapedAt.Value.ToLocalTime().ToString("HH:mm:ss")
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.78rem;">
+                            <span class="spinner-grow spinner-grow-sm me-1" style="width: 8px; height: 8px;" role="status"></span>
+                            Canlı Takip Aktif
+                        </span>
+                    }
+                    <button class="btn btn-outline-secondary btn-sm shadow-sm" @onclick="RefreshDataAsync" disabled="@_refreshing" title="Fiyatları Yenile">
+                        <i class="bi bi-arrow-clockwise @(_refreshing ? "spin" : "")"></i>
+                    </button>
+                    @if (_refreshing)
+                    {
+                        <span class="badge bg-secondary text-white">Yenileniyor...</span>
+                    }
+                </div>
+            </div>
         </div>
-    </div>
 
     @if (!Api.IsAuthenticated)
     {
@@ -317,8 +337,11 @@
                                     <th style="width: 10%" class="text-end">
                                         <span class="text-muted">Fark</span>
                                     </th>
-                                    <th style="width: 12%" class="text-center">
+                                    <th style="width: 10%" class="text-center">
                                         <span class="text-muted">Durum</span>
+                                    </th>
+                                    <th style="width: 10%" class="text-center">
+                                        <span class="text-muted">🕒 Son Tarama</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -381,6 +404,11 @@
                                                 <span class="badge rounded-pill bg-secondary px-3 py-2" style="font-size: 0.78rem;">➖ Eşit</span>
                                             }
                                         </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;" title="@product.CollectedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")">
+                                                <i class="bi bi-clock me-1 text-warning"></i>@product.CollectedAt.ToLocalTime().ToString("HH:mm:ss")
+                                            </span>
+                                        </td>
                                     </tr>
                                 }
                             </tbody>
@@ -419,7 +447,9 @@
     private int _cheaperCount;
     private int _expensiveCount;
     private DateTime? _lastUpdated;
-    private System.Threading.Timer? _refreshTimer;
+    private DateTime? _lastLoadedScrapedAt;
+    private bool _isPlatformScraping = false;
+    private readonly CancellationTokenSource _cts = new();
     private string _activeFilter = "all"; // "all", "cheaper", "expensive"
 
     protected override async Task OnInitializedAsync()
@@ -430,15 +460,70 @@
             return;
         }
 
+        _loading = true;
         await LoadDataAsync();
         _loading = false;
 
-        // 5 dakikada bir otomatik yenile (ilk tetikleme 5 dakika sonra)
-        _refreshTimer = new System.Threading.Timer(
-            async _ => await InvokeAsync(RefreshDataAsync),
-            null,
-            TimeSpan.FromMinutes(5),
-            TimeSpan.FromMinutes(5));
+        // Sayfa ilk yüklendiğinde mevcut tarama zaman damgasını al
+        try
+        {
+            var initStatus = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=pttavm");
+            if (initStatus != null)
+            {
+                _lastLoadedScrapedAt = initStatus.LastScrapedAt;
+                _isPlatformScraping = initStatus.IsScraping;
+            }
+        }
+        catch { }
+
+        // Blazor UI Dispatcher ile tam uyumlu periyodik kontrol döngüsü (3 saniyede bir)
+        _ = StartAutoSyncLoopAsync();
+    }
+
+    private async Task StartAutoSyncLoopAsync()
+    {
+        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+        while (!_cts.IsCancellationRequested && await timer.WaitForNextTickAsync(_cts.Token))
+        {
+            try
+            {
+                await InvokeAsync(CheckAutoSyncAsync);
+            }
+            catch (ObjectDisposedException) { break; }
+            catch { }
+        }
+    }
+
+    private async Task CheckAutoSyncAsync()
+    {
+        if (!Api.IsAuthenticated || _refreshing) return;
+
+        try
+        {
+            var status = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=pttavm");
+            if (status != null)
+            {
+                bool scrapingChanged = _isPlatformScraping != status.IsScraping;
+                _isPlatformScraping = status.IsScraping;
+
+                // Eğer tarama tamamlandıysa (yeni zaman damgası geldiyse)
+                if (status.LastScrapedAt.HasValue && 
+                    (_lastLoadedScrapedAt == null || status.LastScrapedAt.Value > _lastLoadedScrapedAt.Value))
+                {
+                    _lastLoadedScrapedAt = status.LastScrapedAt.Value;
+                    await LoadDataAsync();
+                    StateHasChanged();
+                }
+                else if (scrapingChanged)
+                {
+                    StateHasChanged();
+                }
+            }
+        }
+        catch
+        {
+            // Sessizce geç
+        }
     }
 
     private void ToggleFilter(string filter)
@@ -480,7 +565,7 @@
 
     private async Task LoadDataAsync()
     {
-        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>("api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=pttavm");
+        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>($"api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=pttavm&_t={DateTime.UtcNow.Ticks}");
 
         if (data != null)
         {
@@ -508,7 +593,8 @@
 
     public void Dispose()
     {
-        _refreshTimer?.Dispose();
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
     /// <summary>

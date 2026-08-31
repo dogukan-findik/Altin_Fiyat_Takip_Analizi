@@ -1,4 +1,4 @@
-﻿import re
+import re
 
 
 class ProductFilter:
@@ -16,8 +16,6 @@ class ProductFilter:
 
     _EXCLUDE_STRINGS = [
         "ahlatcı", "ahlatci", "Ahlatcı Kuyumculuk", "ahlatci kuyumculuk",
-        # Çoklu paketler
-        "takım", "set", "çift", "paket", "kombin",
         # İşlenmiş takılar (bilezik hariç)
         "kolye", "küpe", "yüzük", "halhal", "broş", "iğne", "kol düğmesi",
         "zincir", "koleksiyon", "şans kolyesi", "gerdanlık",
@@ -26,8 +24,8 @@ class ProductFilter:
         "taşlı", "pırlanta", "elmas", "zümrüt", "safir", "yakut",
         "mineli", "mine", "swarovski", "kristal",
         "özel tasarım", "el yapımı", "işlemeli",
-        # Durumsal problemler
-        "ikinci el", "antika", "eski tarih", "nostalji",
+        # Durumsal problemler (NOT: 'eski tarih' izin veriliyor - fiyatlar yeni tarihle aynı)
+        "ikinci el", "antika", "nostalji",
         "hasarlı", "kusurlu", "kullanılmış", "ikinci kalite",
         # Sabit/geçme ürünler
         "geçme", "geçmeli", "sabit", "sallantılı",
@@ -36,11 +34,8 @@ class ProductFilter:
     ]
 
     _EXCLUDE_PATTERNS = [
-        r"\d+\s*adet",           # "2 adet", "5 adet"
-        r"\d+['']l[iü]",         # "3'lü", "5'li"
-        r"\d+\s*parça",          # "3 parça"
-        r"\bx\d+\b",             # "x2", "x5"
-        r"\d+\s*li\s+set",       # "2 li set"
+        r"\d+\s*parça\s+tak[ıi]", # takı setleri
+        r"tak[ıi]\s+set[iİ]",
     ]
 
     @classmethod

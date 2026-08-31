@@ -5,8 +5,8 @@ load_dotenv()
 
 DB_CONNECTION_STRING = os.getenv("DB_CONNECTION_STRING", "")
 SCRAPE_TIMEOUT = int(os.getenv("SCRAPE_TIMEOUT", "30"))
-RATE_LIMIT_SECONDS = int(os.getenv("RATE_LIMIT_SECONDS", "60"))
-DETAIL_PAGE_DELAY_SECONDS = int(os.getenv("DETAIL_PAGE_DELAY_SECONDS", "2"))
+RATE_LIMIT_SECONDS = int(os.getenv("RATE_LIMIT_SECONDS", "1"))
+DETAIL_PAGE_DELAY_SECONDS = int(os.getenv("DETAIL_PAGE_DELAY_SECONDS", "1"))
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -114,5 +114,14 @@ SELLERS: dict = {
         "exclude_title_contains": ["adet"],
         "max_pages": None,  # Tüm sayfalar (yaklaşık 3 sayfa)
         "page_delay_seconds": 1.5,
+    },
+    "pazarama_altin": {
+        "name": "Pazarama Altın",
+        "base_url": "https://www.pazarama.com/arama?q=alt%C4%B1n",
+        "collector_type": "pazarama_listing",
+        "exclude_brand_contains": ["ahlatcı", "ahlatci"],
+        "exclude_title_contains": ["kolye", "yüzük", "küpe", "ipli", "adet"],
+        "max_pages": 5,
+        "page_delay_seconds": 1.0,
     },
 }

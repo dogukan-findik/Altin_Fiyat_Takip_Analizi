@@ -49,18 +49,23 @@ class PttavmListingCollector(BaseCollector):
         shop_id_map: dict[str, str] = {} # prod_id -> shop_name
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(
+                headless=True,
+                args=["--disable-blink-features=AutomationControlled", "--no-sandbox"]
+            )
             context = browser.new_context(
                 user_agent=USER_AGENT,
-                viewport={"width": 1920, "height": 1080}
+                viewport={"width": 1920, "height": 1080},
+                locale="tr-TR"
             )
             page = context.new_page()
+            page.add_init_script("Object.defineProperty(navigator, 'webdriver', { get: () => undefined });")
 
             logger.info("PTTAVM kampanya sayfası açılıyor: %s", self.base_url)
-            page.goto(self.base_url, wait_until="load", timeout=SCRAPE_TIMEOUT * 1000)
+            page.goto(self.base_url, wait_until="domcontentloaded", timeout=SCRAPE_TIMEOUT * 1000)
             
             try:
-                page.wait_for_selector("a[href*='-p-']", timeout=15000)
+                page.wait_for_selector("a[href*='-p-']", timeout=20000)
             except Exception:
                 logger.warning("PTTAVM ürün kartları beklenirken zaman aşımı oluştu.")
 
@@ -121,8 +126,8 @@ class PttavmListingCollector(BaseCollector):
                         continue
 
                     # Fiyat çıkarma (Sepete Özel varsa son indirimli fiyatı al)
-                    prices = [l for l in lines if 'TL' in l or '₺' in l]
-                    raw_price_text = prices[-1] if prices else ""
+                    price_matches = re.findall(r'(\d{1,3}(?:\.\d{3})*,\d{2})', text)
+                    raw_price_text = price_matches[-1] if price_matches else ""
 
                     item = ScrapedItem(
                         external_name=title,

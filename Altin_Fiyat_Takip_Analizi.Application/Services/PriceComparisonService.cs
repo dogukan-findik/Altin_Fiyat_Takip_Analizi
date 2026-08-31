@@ -14,18 +14,20 @@ public class PriceComparisonService : IPriceComparisonService
     private readonly IRepository<Product> _productRepo;
     private readonly IRepository<OwnPriceBySource> _ownPriceRepo;
     private readonly IRepository<Seller> _sellerRepo;
-
+    private readonly IRepository<SellerProduct> _sellerProductRepo;
 
     public PriceComparisonService(
         IRepository<PriceHistory> priceRepo,
         IRepository<Product> productRepo,
         IRepository<OwnPriceBySource> ownPriceRepo,
-        IRepository<Seller> sellerRepo)
+        IRepository<Seller> sellerRepo,
+        IRepository<SellerProduct> sellerProductRepo)
     {
         _priceRepo = priceRepo;
         _productRepo = productRepo;
         _ownPriceRepo = ownPriceRepo;
         _sellerRepo = sellerRepo;
+        _sellerProductRepo = sellerProductRepo;
     }
 
     public async Task<PriceComparisonDto> ComparePricesAsync(int productId, SellerType? sellerType = null)
@@ -169,71 +171,88 @@ public class PriceComparisonService : IPriceComparisonService
 
     public async Task<List<SellerProductBreakdownDto>> GetSellerProductBreakdownAsync(SellerType sellerType, string? platform = null)
     {
-        var sellers = await _sellerRepo.GetQueryable()
+        // 1. İlgili platforma ve satıcı tipine uyan eşleşmiş ürünleri çek (küçük tablo, çok hızlı indexli sorgu)
+        var spQuery = _sellerProductRepo.GetQueryable()
             .AsNoTracking()
-            .Where(s => s.Type == sellerType && s.IsActive)
-            .ToListAsync();
-
-        var last24h = DateTime.UtcNow.AddHours(-24);
-
-        var query = _priceRepo.GetQueryable()
-            .AsNoTracking()
-            .Include(p => p.SellerProduct)
-                .ThenInclude(sp => sp.Seller)
-            .Include(p => p.SellerProduct)
-                .ThenInclude(sp => sp.Product)
-            .Where(p => p.CollectedAt >= last24h
-                        && p.IsAvailable
-                        && p.SellerProduct.Seller.Type == sellerType
-                        && p.SellerProduct.ProductId != null
-                        && p.SellerProduct.IsMatched);
+            .Include(sp => sp.Seller)
+            .Include(sp => sp.Product)
+            .Where(sp => sp.IsActive && sp.IsMatched && sp.ProductId != null && sp.Seller.Type == sellerType && sp.Seller.IsActive);
 
         if (!string.IsNullOrWhiteSpace(platform))
         {
             var normalizedPlatform = platform.Trim().ToLowerInvariant();
             if (normalizedPlatform == "n11")
-                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains("n11.com"));
+                spQuery = spQuery.Where(sp => sp.ExternalUrl.Contains("n11.com"));
             else if (normalizedPlatform == "pttavm")
-                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains("pttavm.com"));
+                spQuery = spQuery.Where(sp => sp.ExternalUrl.Contains("pttavm.com"));
+            else if (normalizedPlatform == "pazarama")
+                spQuery = spQuery.Where(sp => sp.ExternalUrl.Contains("pazarama.com"));
             else
-                query = query.Where(p => p.SellerProduct.ExternalUrl.Contains(normalizedPlatform));
+                spQuery = spQuery.Where(sp => sp.ExternalUrl.Contains(normalizedPlatform));
         }
 
-        // Son 24 saat içindeki tüm fiyatları çek (her sellerProduct için en son fiyat)
-        var latestPrices = await query
+        var matchedSellerProducts = await spQuery.ToListAsync();
+        if (!matchedSellerProducts.Any()) return new List<SellerProductBreakdownDto>();
+
+        var spMap = matchedSellerProducts.ToDictionary(sp => sp.Id);
+        var spIds = spMap.Keys.ToList();
+
+        var last24h = DateTime.UtcNow.AddHours(-24);
+
+        // 2. Sadece bu SellerProductId'ler için son 24 saatteki en son fiyatları çek (En yüksek Id = en son kayıt)
+        var maxPriceRecords = await _priceRepo.GetQueryable()
+            .AsNoTracking()
+            .Where(p => spIds.Contains(p.SellerProductId) && p.CollectedAt >= last24h && p.IsAvailable)
             .GroupBy(p => p.SellerProductId)
-            .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
+            .Select(g => new
+            {
+                SellerProductId = g.Key,
+                MaxId = g.Max(p => p.Id)
+            })
             .ToListAsync();
 
-        // OwnPrice'ları toplu çek
+        var maxIds = maxPriceRecords.Select(x => x.MaxId).ToList();
+
+        var latestPriceList = await _priceRepo.GetQueryable()
+            .AsNoTracking()
+            .Where(p => maxIds.Contains(p.Id))
+            .Select(p => new { p.SellerProductId, p.Price, p.CollectedAt })
+            .ToListAsync();
+
+        // 3. OwnPrice'ları toplu çek
         var ownPrices = await _ownPriceRepo.GetQueryable()
             .AsNoTracking()
             .Where(o => o.SourceType == SellerType.Bank)
             .ToListAsync();
 
-        // Products'ı toplu çek (fallback OurPrice için)
+        // 4. Products'ı toplu çek (fallback OurPrice için)
         var products = (await _productRepo.GetAllAsync()).Where(p => p.IsActive).ToDictionary(p => p.Id);
 
         var result = new List<SellerProductBreakdownDto>();
 
-        foreach (var seller in sellers)
+        // Satıcı bazında grupla
+        var productsBySeller = matchedSellerProducts
+            .GroupBy(sp => sp.SellerId);
+
+        var priceBySpId = latestPriceList
+            .Where(lp => lp != null)
+            .ToDictionary(lp => lp!.SellerProductId, lp => lp!);
+
+        foreach (var sellerGroup in productsBySeller)
         {
-            var sellerPrices = latestPrices
-                .Where(p => p.SellerProduct.SellerId == seller.Id)
-                .OrderBy(p => p.SellerProduct.Product?.Name)
-                .ToList();
-
-            if (!sellerPrices.Any()) continue;
-
+            var seller = sellerGroup.First().Seller;
             var dto = new SellerProductBreakdownDto
             {
                 SellerId = seller.Id,
                 SellerName = seller.Name
             };
 
-            foreach (var ph in sellerPrices)
+            foreach (var sp in sellerGroup.OrderBy(sp => sp.Product?.Name))
             {
-                var productId = ph.SellerProduct.ProductId!.Value;
+                if (!priceBySpId.TryGetValue(sp.Id, out var latestPrice))
+                    continue;
+
+                var productId = sp.ProductId!.Value;
                 var product = products.GetValueOrDefault(productId);
                 if (product == null) continue;
 
@@ -246,27 +265,40 @@ public class PriceComparisonService : IPriceComparisonService
                     products.Values,
                     id => ownPrices.FirstOrDefault(o => o.ProductId == id)?.Price);
 
-                var diff = ourPrice - ph.Price;
-                var diffPercent = ph.Price != 0 ? (diff / ph.Price) * 100 : 0;
+                var sellerPrice = latestPrice.Price;
+                var diff = ourPrice - sellerPrice;
+                var diffPercent = sellerPrice > 0 ? (diff / sellerPrice) * 100 : 0;
 
                 dto.Products.Add(new SellerProductComparisonDto
                 {
-                    SellerProductId = ph.SellerProduct.Id,
+                    SellerProductId = sp.Id,
                     SellerName = seller.Name,
-                    ExternalProductName = ph.SellerProduct.ExternalName,
-                    ExternalUrl = ph.SellerProduct.ExternalUrl,
-                    SellerPrice = ph.Price,
+                    ExternalProductName = sp.ExternalName,
+                    ExternalUrl = sp.ExternalUrl,
                     MatchedProductId = productId,
                     MatchedProductName = product.Name,
+                    SellerPrice = sellerPrice,
                     OurPrice = ourPrice,
                     PriceDiff = diff,
                     PriceDiffPercent = Math.Round(diffPercent, 2),
-                    CollectedAt = ph.CollectedAt
+                    CollectedAt = latestPrice.CollectedAt
                 });
             }
 
+            // Aynı ürün URL'sine ait mükerrer varyant varsa sadece en son tarananı koru
             if (dto.Products.Any())
+            {
+                dto.Products = dto.Products
+                    .GroupBy(p => {
+                        var url = p.ExternalUrl ?? "";
+                        var qIdx = url.IndexOf('?');
+                        return qIdx > 0 ? url.Substring(0, qIdx) : url;
+                    })
+                    .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
+                    .ToList();
+
                 result.Add(dto);
+            }
         }
 
         return result;

@@ -1,4 +1,4 @@
-﻿
+
 using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 using Altin_Fiyat_Takip_Analizi.Application.Mapping;
 using Altin_Fiyat_Takip_Analizi.Application.Validators;
@@ -52,6 +52,10 @@ builder.Services.AddScoped<ISellerProductService, Altin_Fiyat_Takip_Analizi.Appl
 
 // --- Kendi fiyat guncelleme servisi (her 5 dakikada bir sync_own_prices.py calistirir) ---
 builder.Services.AddHostedService<Altin_Fiyat_Takip_Analizi.API.BackgroundServices.OwnPriceSyncBackgroundService>();
+
+// --- Pazaryeri canli tarama ve otomatik fiyat guncelleme servisi ---
+builder.Services.AddSingleton<IScraperRunnerService, Altin_Fiyat_Takip_Analizi.Infrastructure.Services.ScraperRunnerService>();
+builder.Services.AddHostedService<Altin_Fiyat_Takip_Analizi.API.BackgroundServices.MarketplacePriceSyncBackgroundService>();
 
 // --- JWT Auth ---
 var jwtKey = builder.Configuration["Jwt:Key"]

@@ -1,4 +1,4 @@
-﻿from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright
 from scraper.models import ScrapedItem
 from scraper.config import USER_AGENT, SCRAPE_TIMEOUT
 from scraper.utils.retry import retry
@@ -21,20 +21,18 @@ class FilteredTablePlaywrightCollector:
         items = []
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
             page = browser.new_page(user_agent=USER_AGENT)
-            page.goto(self.base_url, timeout=SCRAPE_TIMEOUT * 1000)
+            page.goto(self.base_url, wait_until="domcontentloaded", timeout=20000)
 
-            # Tablo hücreleri sonradan JS ile dolduruluyor — statik
-            # wait_for_selector yetmez, hücrenin GERÇEKTEN dolmasını
-            # (boş olmayan metin) bekliyoruz.
+            # Tablo hücreleri sonradan JS ile dolduruluyor — altın satırının gelmesini bekle
             page.wait_for_function(
                 """(sel) => {
                     const rows = document.querySelectorAll(sel);
-                    return rows.length > 0 && [...rows].some(r => r.innerText.trim().length > 0);
+                    return rows.length > 0 && [...rows].some(r => r.innerText.includes('ALTIN'));
                 }""",
                 arg=self.selectors["row"],
-                timeout=SCRAPE_TIMEOUT * 1000
+                timeout=12000
             )
 
             rows = page.query_selector_all(self.selectors["row"])

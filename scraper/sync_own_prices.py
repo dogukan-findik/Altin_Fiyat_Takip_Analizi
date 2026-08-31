@@ -1,4 +1,4 @@
-﻿import json
+import json
 import time
 from scraper.collectors.filtered_table_collector import FilteredTableCollector
 from scraper.parsers.gold_parser import parse_price, extract_gram_weight
@@ -7,7 +7,7 @@ from scraper.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# Standart ürünler (tekil)
+# Standart ürünler ve sarrafiye kategorileri
 # NOT: Gram Altın artık gram gram çekiliyor (fetch_gram_altin_prices ile)
 STORE_CATEGORIES = [
     {"product": "Çeyrek Altın", "url": "https://www.ahlatcistore.com.tr/kategoriler/ceyrek-altin"},
@@ -15,6 +15,7 @@ STORE_CATEGORIES = [
     {"product": "Tam Altın", "url": "https://www.ahlatcistore.com.tr/kategoriler/tam-altin"},
     {"product": "Reşat Altını", "url": "https://www.ahlatcistore.com.tr/kategoriler/resat-altin"},
     {"product": "Ata Altını", "url": "https://www.ahlatcistore.com.tr/kategoriler/ata-lira"},
+    {"product": "Gremse Altın", "url": "https://www.ahlatcistore.com.tr/kategoriler/gremse-altin"},
 ]
 
 # Bilezikler: Her gramaj ayrı kategoriye gidiyor
@@ -24,27 +25,11 @@ BRACELET_URL = "https://www.ahlatcistore.com.tr/kategoriler/22-ayar-bilezik"
 GRAM_ALTIN_URL = "https://www.ahlatcistore.com.tr/kategoriler/24-ayar-gram-alltin"
 
 # Bu selector'lar daha önce ahlatcistore.com.tr kart yapısından çıkarılmıştı
-# (ul.grid li a[href*='/urun/'], h3 title, p fiyat).
 STORE_SELECTORS = {
     "row": "ul.grid li a[href*='/urun/']",
     "name": "h3",
     "price": "p",
 }
-
-
-def _pick_first_new_tarihli(items: list) -> tuple[str, float] | None:
-    """Aynı kategoride birden fazla ürün olabilir (varyant, adet paketleri).
-    'Yeni Tarihli' VE 'Adet' içermeyen ilk tekil ürünü seçer — daha önce
-    kurduğumuz kuralın aynısı."""
-    for item in items:
-        name = item.external_name
-        lower = name.lower()
-        if "adet" in lower:
-            continue
-        if "yeni tarihli" not in lower and "24 ayar" not in lower and "22 ayar" not in lower:
-            continue
-        return name, item.raw_price
-    return None
 
 
 def _collect_all_bracelet_pages() -> list:
@@ -211,8 +196,8 @@ def fetch_gram_altin_prices() -> dict[str, float]:
 
 
 def fetch_store_prices() -> dict[str, float]:
-
-    """Standart ürünlerin fiyatlarını çeker."""
+    """Standart ve sarrafiye ürünlerinin (tekil ve çoklu adet paketleri dahil) fiyatlarını çeker."""
+    from scraper.matchers.product_matcher import ProductMatcher
     results: dict[str, float] = {}
 
     for cat in STORE_CATEGORIES:
@@ -229,17 +214,20 @@ def fetch_store_prices() -> dict[str, float]:
             logger.error("'%s' kategorisi taranamadı (%s): %s", cat["product"], cat["url"], exc)
             continue
 
-        picked = _pick_first_new_tarihli(items)
-        if picked is None:
-            logger.warning("'%s' için uygun (Yeni Tarihli, tekil) ürün bulunamadı.", cat["product"])
-            continue
+        for item in items:
+            raw_title = item.external_name
+            matched_name = ProductMatcher.match(raw_title)
+            if not matched_name:
+                continue
 
-        name, raw_price = picked
-        price = parse_price(raw_price)
-        if price is None:
-            continue
+            price = parse_price(item.raw_price)
+            if price is None or price <= 0:
+                continue
 
-        results[cat["product"]] = price
+            # Eğer bu isimde bir ürün daha önce eklenmemişse veya daha güncelse kaydet
+            if matched_name not in results:
+                results[matched_name] = price
+                logger.info("Kendi mağaza fiyatı yakalandı: %s -> %.2f TL (%s)", matched_name, price, raw_title)
 
     return results
 
@@ -249,12 +237,23 @@ def run():
     updated = []
     skipped = []
 
-    # 1) Standart ürünleri çek
+    # 1) Standart ve sarrafiye (tekil + çoklu paketler) ürünleri çek
     store_prices = fetch_store_prices()
     for product_name, price in store_prices.items():
-        affected = db.update_own_price(product_name, price, source_type="Bank")
-        if affected > 0:
-            updated.append({"product": product_name, "price": price, "source": "Bank"})
+        # Gerekirse eksik ürünü DB'de oluştur
+        db.ensure_multi_pack_or_special_product(product_name)
+
+        affected_bank = db.update_own_price(product_name, price, source_type="Bank")
+        affected_mp = db.update_own_price(product_name, price, source_type="Marketplace")
+
+        # Products tablosundaki OurPrice alanını da senkronize et
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("UPDATE Products SET OurPrice = ? WHERE Name = ?", price, product_name)
+            conn.commit()
+
+        if affected_bank > 0 or affected_mp > 0:
+            updated.append({"product": product_name, "price": price})
         else:
             skipped.append(product_name)
 

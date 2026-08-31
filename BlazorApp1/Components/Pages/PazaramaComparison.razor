@@ -1,19 +1,19 @@
-@page "/pazaryeri-karsilastirma"
+@page "/pazarama-karsilastirma"
 @using Altin_Fiyat_Takip_Analizi.Web.Models
 @using Altin_Fiyat_Takip_Analizi.Web.Services
 @implements IDisposable
 @inject ApiService Api
 @inject NavigationManager Nav
 
-<PageTitle>N11 Pazaryeri Karşılaştırma</PageTitle>
+<PageTitle>Pazarama Pazaryeri Karşılaştırma</PageTitle>
 
 <div class="container-fluid py-3">
     <div class="d-flex align-items-center justify-content-between mb-4">
         <div class="d-flex align-items-center">
-            <span style="font-size:2rem" class="me-3">🏪</span>
+            <span style="font-size:2rem" class="me-3">🛍️</span>
             <div>
-                <h2 class="mb-0 fw-bold">N11 Pazaryeri Karşılaştırma</h2>
-                <p class="text-muted mb-0">N11'deki tüm satıcıların ürünleri, bizim fiyatlarımızla ürün bazlı karşılaştırılıyor.</p>
+                <h2 class="mb-0 fw-bold">Pazarama Pazaryeri Karşılaştırma</h2>
+                <p class="text-muted mb-0">Pazarama'daki altın satıcılarının ürünleri, bizim mağaza fiyatlarımızla karşılaştırılıyor.</p>
             </div>
         </div>
             <div class="d-flex flex-column align-items-end gap-1">
@@ -65,17 +65,17 @@
     else if (_loading)
     {
         <div class="text-center py-5">
-            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; color: #6c5ce7 !important;">
                 <span class="visually-hidden">Yükleniyor...</span>
             </div>
-            <p class="text-muted mt-3">Pazaryeri verileri yükleniyor...</p>
+            <p class="text-muted mt-3">Pazarama verileri yükleniyor...</p>
         </div>
     }
     else if (_sellers is null || _sellers.Count == 0)
     {
         <div class="alert alert-info d-flex align-items-center">
             <span class="me-2">ℹ️</span>
-            <span>Henüz pazaryeri karşılaştırma verisi bulunmuyor.</span>
+            <span>Henüz Pazarama karşılaştırma verisi bulunmuyor veya tarama işlemi devam ediyor.</span>
         </div>
     }
     else
@@ -84,7 +84,7 @@
         <div class="row mb-4">
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
-                     style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); cursor: pointer; transition: all 0.25s ease;"
+                     style="background: linear-gradient(135deg, #4834d4 0%, #686de0 100%); cursor: pointer; transition: all 0.25s ease;"
                      @onclick="@(() => ToggleFilter("all"))">
                     <div class="card-body text-white text-center">
                         <div class="d-flex justify-content-center align-items-center mb-1">
@@ -100,7 +100,7 @@
             </div>
             <div class="col-md-3">
                 <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
-                     style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); cursor: pointer; transition: all 0.25s ease;"
+                     style="background: linear-gradient(135deg, #be2edd 0%, #e056fd 100%); cursor: pointer; transition: all 0.25s ease;"
                      @onclick="@(() => ToggleFilter("all"))">
                     <div class="card-body text-white text-center">
                         <div class="d-flex justify-content-center align-items-center mb-1">
@@ -187,7 +187,7 @@
                         <span style="font-size:1.5rem" class="me-2">⚠️</span>
                         <div>
                             <h5 class="mb-0 fw-bold">Pahalı Olduğumuz Ürünler Listesi</h5>
-                            <small class="opacity-75">Bizim fiyatımızın N11 satıcılarından daha yüksek olduğu toplam @expensiveList.Count ürün listeleniyor.</small>
+                            <small class="opacity-75">Bizim fiyatımızın Pazarama satıcılarından daha yüksek olduğu toplam @expensiveList.Count ürün listeleniyor.</small>
                         </div>
                     </div>
                     <span class="badge bg-light text-danger fw-bold fs-6 px-3 py-2">@expensiveList.Count Ürün</span>
@@ -198,7 +198,7 @@
                             <thead style="background-color: #fff5f5;">
                                 <tr>
                                     <th class="ps-4" style="width: 22%">🏢 Satıcı / Mağaza</th>
-                                    <th style="width: 26%">📦 N11 Ürün Adı</th>
+                                    <th style="width: 26%">📦 Pazarama Ürün Adı</th>
                                     <th style="width: 14%" class="text-end">Satıcı Fiyatı</th>
                                     <th style="width: 14%" class="text-end">Bizim Fiyat</th>
                                     <th style="width: 12%" class="text-end">Pahalı Olduğumuz Fark</th>
@@ -210,7 +210,7 @@
                                 {
                                     <tr style="background-color: rgba(220, 53, 69, 0.04);">
                                         <td class="ps-4 fw-bold text-dark">
-                                            <span class="badge bg-dark text-white me-1">N11</span>
+                                            <span class="badge me-1" style="background-color: #6c5ce7; color: white;">Pazarama</span>
                                             @item.Seller
                                         </td>
                                         <td>
@@ -218,7 +218,7 @@
                                             {
                                                 <a href="@item.Product.ExternalUrl" target="_blank" class="text-decoration-none text-dark fw-semibold">
                                                     @item.Product.ExternalProductName
-                                                    <small class="text-primary ms-1">🔗</small>
+                                                    <small class="ms-1" style="color: #6c5ce7;">🔗</small>
                                                 </a>
                                             }
                                             else
@@ -280,10 +280,10 @@
 
             <div class="card mb-4 border-0 shadow-sm overflow-hidden">
                 <div class="card-header border-0 py-3"
-                     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
+                     style="background: linear-gradient(135deg, #2c2c54 0%, #474787 100%); color: white;">
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center">
-                            <span style="font-size:1.5rem" class="me-2">🏬</span>
+                            <span style="font-size:1.5rem" class="me-2">🛍️</span>
                             <div>
                                 <h5 class="mb-0 fw-bold">@seller.SellerName</h5>
                                 <small class="opacity-75">
@@ -297,7 +297,7 @@
                                     }
                                     else
                                     {
-                                        <span>@seller.Products.Count ürün takip ediliyor</span>
+                                        <span>@seller.Products.Count ürün takip ediliyor (Pazarama)</span>
                                     }
                                 </small>
                             </div>
@@ -323,7 +323,7 @@
                             <thead style="background-color: #f8f9fa;">
                                 <tr>
                                     <th class="ps-4" style="width: 28%">
-                                        <span class="text-muted">📦 N11 Ürün Adı</span>
+                                        <span class="text-muted">📦 Pazarama Ürün Adı</span>
                                     </th>
                                     <th style="width: 14%" class="text-end">
                                         <span class="text-muted">Satıcı Fiyatı</span>
@@ -360,7 +360,7 @@
                                             {
                                                 <a href="@product.ExternalUrl" target="_blank" class="text-decoration-none text-dark fw-semibold">
                                                     @product.ExternalProductName
-                                                    <small class="text-primary ms-1">🔗</small>
+                                                    <small class="ms-1" style="color: #6c5ce7;">🔗</small>
                                                 </a>
                                             }
                                             else
@@ -372,7 +372,7 @@
                                             @FormatPrice(product.SellerPrice) ₺
                                         </td>
                                         <td class="text-center">
-                                            <span class="badge rounded-pill px-3 py-1" style="background-color: #e3f2fd; color: #1565c0; font-size: 0.82rem;">
+                                            <span class="badge rounded-pill px-3 py-1" style="background-color: #f3e5f5; color: #6a1b9a; font-size: 0.82rem;">
                                                 @product.MatchedProductName
                                             </span>
                                         </td>
@@ -406,7 +406,7 @@
                                         </td>
                                         <td class="text-center">
                                             <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.78rem;" title="@product.CollectedAt.ToLocalTime().ToString("dd.MM.yyyy HH:mm:ss")">
-                                                <i class="bi bi-clock me-1 text-primary"></i>@product.CollectedAt.ToLocalTime().ToString("HH:mm:ss")
+                                                <i class="bi bi-clock me-1 text-info"></i>@product.CollectedAt.ToLocalTime().ToString("HH:mm:ss")
                                             </span>
                                         </td>
                                     </tr>
@@ -435,7 +435,7 @@
     }
     .filter-active-all {
         transform: translateY(-4px);
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.4), 0 10px 22px rgba(102, 126, 234, 0.3) !important;
+        box-shadow: 0 0 0 4px rgba(108, 92, 231, 0.4), 0 10px 22px rgba(108, 92, 231, 0.3) !important;
     }
 </style>
 
@@ -467,7 +467,7 @@
         // Sayfa ilk yüklendiğinde mevcut tarama zaman damgasını al
         try
         {
-            var initStatus = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=n11");
+            var initStatus = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=pazarama");
             if (initStatus != null)
             {
                 _lastLoadedScrapedAt = initStatus.LastScrapedAt;
@@ -500,7 +500,7 @@
 
         try
         {
-            var status = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=n11");
+            var status = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=pazarama");
             if (status != null)
             {
                 bool scrapingChanged = _isPlatformScraping != status.IsScraping;
@@ -545,7 +545,7 @@
 
         if (_activeFilter == "expensive")
             return _sellers.Where(s => s.Products.Any(p => p.PriceDiff > 0)).ToList();
-        
+
         if (_activeFilter == "cheaper")
             return _sellers.Where(s => s.Products.Any(p => p.PriceDiff < 0)).ToList();
 
@@ -565,7 +565,7 @@
 
     private async Task LoadDataAsync()
     {
-        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>($"api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=n11&_t={DateTime.UtcNow.Ticks}");
+        var data = await Api.GetAsync<List<SellerProductBreakdownDto>>($"api/v1/products/seller-product-breakdown?sellerType=MarketPlace&platform=pazarama&_t={DateTime.UtcNow.Ticks}");
 
         if (data != null)
         {

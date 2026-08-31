@@ -1,4 +1,4 @@
-﻿namespace Altin_Fiyat_Takip_Analizi.Web.Models;
+namespace Altin_Fiyat_Takip_Analizi.Web.Models;
 
 public class LoginDto
 {
@@ -81,4 +81,11 @@ public class DailyReportDto
     public decimal MostExpensiveProductDiffPercent { get; set; }
     public int TotalPriceCollections { get; set; }
     public DateTime GeneratedAt { get; set; }
+}
+
+public class ScraperStatusDto
+{
+    public string Platform { get; set; } = string.Empty;
+    public bool IsScraping { get; set; }
+    public DateTime? LastScrapedAt { get; set; }
 }

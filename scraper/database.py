@@ -1,4 +1,4 @@
-﻿import pyodbc
+import pyodbc
 from contextlib import contextmanager
 from scraper.config import DB_CONNECTION_STRING
 from scraper.utils.logger import get_logger
@@ -49,31 +49,43 @@ class DatabaseManager:
     def get_or_create_seller_product(self, seller_id: int, external_name: str,
                                    external_url: str, external_id: str | None,
                                    product_id: int | None = None) -> int:
-        """SellerProducts'ta bu external_id daha önce görülmüş mü kontrol eder.
-        product_id verildiyse (biliniyorsa) ve satır ya yeni ya da hâlâ
-        eşleşmemişse (ProductId NULL), doğrudan doğru ürüne bağlar — artık
-        ayrı bir auto-match adımına bağımlı değiliz."""
+        """SellerProducts'ta bu external_id veya normalize edilmiş ExternalUrl daha önce görülmüş mü kontrol eder.
+        Mükerrer oluşmasını engeller, eski kayıtları yeni ExternalId ile birleştirir."""
+        clean_url = external_url.split('?')[0].strip() if external_url else ""
+
         with self.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute(
-                "SELECT Id, ProductId FROM SellerProducts WHERE SellerId = ? AND ExternalId = ?",
-                seller_id, external_id
-            )
-            row = cursor.fetchone()
+            
+            # 1. Öncelik: ExternalId ile ara
+            row = None
+            if external_id:
+                cursor.execute(
+                    "SELECT Id, ProductId FROM SellerProducts WHERE SellerId = ? AND ExternalId = ?",
+                    seller_id, external_id
+                )
+                row = cursor.fetchone()
+
+            # 2. Öncelik: ExternalId bulunamadıysa clean_url ile ara (Eski URL tabanlı kayıtları yakalamak için)
+            if not row and clean_url:
+                cursor.execute(
+                    "SELECT TOP 1 Id, ProductId FROM SellerProducts WHERE SellerId = ? "
+                    "AND (ExternalUrl = ? OR ExternalUrl LIKE ? OR ExternalId = ?)",
+                    seller_id, clean_url, clean_url + '?%', clean_url
+                )
+                row = cursor.fetchone()
 
             if row:
                 sp_id, existing_product_id = row
-                if product_id is not None and existing_product_id != product_id:
-                    cursor.execute(
-                        "UPDATE SellerProducts SET ProductId = ?, IsMatched = 1, MatchConfidence = 100, "
-                        "ExternalName = ?, ExternalUrl = ?, LastCollectedAt = GETUTCDATE() WHERE Id = ?",
-                        product_id, external_name, external_url, sp_id
-                    )
-                else:
-                    cursor.execute(
-                        "UPDATE SellerProducts SET LastCollectedAt = GETUTCDATE() WHERE Id = ?",
-                        sp_id
-                    )
+                target_pid = product_id if product_id is not None else existing_product_id
+                is_matched = target_pid is not None
+
+                cursor.execute(
+                    "UPDATE SellerProducts SET ProductId = ?, IsMatched = ?, MatchConfidence = ?, "
+                    "ExternalName = ?, ExternalUrl = ?, ExternalId = COALESCE(?, ExternalId), "
+                    "IsActive = 1, LastCollectedAt = GETUTCDATE() WHERE Id = ?",
+                    target_pid, 1 if is_matched else 0, 100 if is_matched else None,
+                    external_name, external_url, external_id, sp_id
+                )
                 conn.commit()
                 return sp_id
 
@@ -203,6 +215,66 @@ class DatabaseManager:
             new_id = cursor.fetchone()[0]
             conn.commit()
             logger.info("Yeni gram altın ürünü oluşturuldu: %s (Id=%d)", gram_label, new_id)
+            return new_id
+
+    def ensure_multi_pack_or_special_product(self, product_name: str) -> int:
+        """Çoklu adet paketleri ('3 Adet Çeyrek Altın', '5 Adet Tam Altın') veya özel altınlar
+        ('Gremse Altın', 'Beşli Altın') için Products tablosunda kayıt yoksa otomatik oluşturur.
+        Varsa mevcut Id'yi döner."""
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT Id FROM Products WHERE Name = ?", product_name)
+            row = cursor.fetchone()
+            if row:
+                return row[0]
+
+            import re
+            m_pack = re.match(r"^(\d+)\s*Adet\s*(.+)$", product_name, re.IGNORECASE)
+            category = "Sarrafiye"
+            calc_our_price = 0.0
+
+            if m_pack:
+                qty = int(m_pack.group(1))
+                base_name = m_pack.group(2).strip()
+                # Temel ürünün birim fiyatını öğren
+                cursor.execute(
+                    "SELECT COALESCE((SELECT TOP 1 Price FROM OwnPriceBySource WHERE ProductId = p.Id AND SourceType = 'Marketplace'), p.OurPrice) "
+                    "FROM Products p WHERE p.Name = ?", base_name
+                )
+                base_row = cursor.fetchone()
+                if base_row and base_row[0]:
+                    calc_our_price = float(base_row[0]) * qty
+            elif product_name == "Gremse Altın":
+                # Çeyrek altının 10 katı (2.5 adet tam altın = 10 çeyrek altın)
+                cursor.execute("SELECT OurPrice FROM Products WHERE Name = 'Çeyrek Altın'")
+                base_row = cursor.fetchone()
+                if base_row and base_row[0]:
+                    calc_our_price = float(base_row[0]) * 10
+            elif product_name == "Beşli Altın":
+                # Tam altının 5 katı
+                cursor.execute("SELECT OurPrice FROM Products WHERE Name = 'Tam Altın'")
+                base_row = cursor.fetchone()
+                if base_row and base_row[0]:
+                    calc_our_price = float(base_row[0]) * 5
+
+            normalized = product_name.lower().replace(" ", "")
+            description = f"{product_name} (Sarrafiye)"
+
+            cursor.execute(
+                "INSERT INTO Products (Name, NormalizedName, Category, Description, OurPrice, IsActive, CreatedAt) "
+                "OUTPUT INSERTED.Id VALUES (?, ?, ?, ?, ?, 1, GETUTCDATE())",
+                product_name, normalized, category, description, calc_our_price
+            )
+            new_id = cursor.fetchone()[0]
+
+            if calc_our_price > 0:
+                cursor.execute(
+                    "INSERT INTO OwnPriceBySource (ProductId, SourceType, Price, UpdatedAt) VALUES (?, 'Marketplace', ?, GETUTCDATE())",
+                    new_id, calc_our_price
+                )
+
+            conn.commit()
+            logger.info("Yeni sarrafiye/paket ürünü oluşturuldu: %s (Id=%d, OurPrice=%.2f TL)", product_name, new_id, calc_our_price)
             return new_id
 
     def get_unit_gram_gold_price(self) -> float | None:

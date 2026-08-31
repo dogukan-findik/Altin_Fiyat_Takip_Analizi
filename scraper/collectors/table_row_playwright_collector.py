@@ -1,4 +1,4 @@
-﻿from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright
 from scraper.models import ScrapedItem
 from scraper.config import USER_AGENT, SCRAPE_TIMEOUT
 from scraper.utils.retry import retry
@@ -20,10 +20,10 @@ class TableRowPlaywrightCollector:
         items = []
 
         with sync_playwright() as p:
-            browser = p.chromium.launch(headless=True)
+            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-gpu"])
             page = browser.new_page(user_agent=USER_AGENT)
-            page.goto(self.base_url, timeout=SCRAPE_TIMEOUT * 1000)
-            page.wait_for_selector(self.selectors["row"], timeout=SCRAPE_TIMEOUT * 1000)
+            page.goto(self.base_url, wait_until="domcontentloaded", timeout=20000)
+            page.wait_for_selector(self.selectors["row"], timeout=12000)
 
             rows = page.query_selector_all(self.selectors["row"])
             for row in rows:

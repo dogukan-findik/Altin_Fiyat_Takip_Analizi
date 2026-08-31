@@ -75,6 +75,7 @@ public class ProductsController : ControllerBase
     => Ok(await _comparisonService.GetSellerBreakdownAsync(sellerType));
 
     [HttpGet("seller-product-breakdown")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
     public async Task<ActionResult<List<SellerProductBreakdownDto>>> SellerProductBreakdown(
         [FromQuery] SellerType sellerType,
         [FromQuery] string? platform = null)
