@@ -35,13 +35,13 @@ builder.Services.AddQuartz(q =>
         .WithIdentity("DailyReportJob-trigger")
         .WithCronSchedule(builder.Configuration["Quartz:DailyReportCron"] ?? "0 0 18 * * ?"));
 
-    // 3) Ahlatcı kendi mağaza fiyatı güncelleme (sync_own_prices) — her 5 dakikada bir
+    // 3) Ahlatcı kendi mağaza fiyatı güncelleme (sync_own_prices) — her 1 dakikada bir
     var ownPriceSyncJobKey = new JobKey("OwnPriceSyncJob");
     q.AddJob<OwnPriceSyncJob>(opts => opts.WithIdentity(ownPriceSyncJobKey));
     q.AddTrigger(opts => opts
         .ForJob(ownPriceSyncJobKey)
         .WithIdentity("OwnPriceSyncJob-trigger")
-        .WithCronSchedule(builder.Configuration["Quartz:OwnPriceSyncCron"] ?? "0 0/5 * * * ?"));
+        .WithCronSchedule(builder.Configuration["Quartz:OwnPriceSyncCron"] ?? "0 */1 * * * ?"));
 
     var bankJobKey = new JobKey("BankPriceCollectionJob");
     q.AddJob<BankPriceCollectionJob>(opts => opts.WithIdentity(bankJobKey));

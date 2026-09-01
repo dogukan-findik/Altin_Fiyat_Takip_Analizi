@@ -30,7 +30,14 @@ class MarketplaceListingCollector:
 
     @retry(max_attempts=3, base_delay_seconds=2.0)
     def _fetch(self, url: str) -> str:
-        headers = {"User-Agent": USER_AGENT}
+        headers = {
+            "User-Agent": USER_AGENT,
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        }
         response = requests.get(url, headers=headers, timeout=SCRAPE_TIMEOUT)
         response.raise_for_status()
         return response.text
@@ -42,10 +49,13 @@ class MarketplaceListingCollector:
         return title.split()[0]
 
     def _build_page_url(self, page_num: int) -> str:
-        """N11 pagination formatı: ?pg=2, ?pg=3 vb."""
+        """N11 pagination formatı: ?pg=2, ?pg=3 vb. ve Cloudflare/CDN cache-busting parametresi."""
         parsed = urlparse(self.base_url)
         query_params = parse_qs(parsed.query)
-        query_params['pg'] = [str(page_num)]
+        if page_num > 1:
+            query_params['pg'] = [str(page_num)]
+        # Cloudflare / Edge CDN cache bypass için milisaniye timestamp
+        query_params['_t'] = [str(int(time.time() * 1000))]
         new_query = urlencode(query_params, doseq=True)
         return urlunparse((parsed.scheme, parsed.netloc, parsed.path, parsed.params, new_query, parsed.fragment))
 
@@ -84,10 +94,27 @@ class MarketplaceListingCollector:
                         if any(term.replace(" ", "") in normalized_seller for term in self.exclude_terms):
                             continue
 
-                        # Fiyat belirleme
-                        price_val = prod.get("displayPrice") or prod.get("price") or prod.get("mobilePrice")
-                        if price_val:
-                            raw_price = f"{float(price_val):.2f}"
+                        # Fiyat belirleme: Satıcının sunduğu en güncel nihai indirimli fiyatı (sepet/anlık/nihai) al
+                        price_candidates = []
+                        final_dto = prod.get("finalPriceAreaDTO") or {}
+                        for val in [
+                            prod.get("instantDiscountPrice"),
+                            final_dto.get("finalPrice"),
+                            prod.get("displayPrice"),
+                            prod.get("price"),
+                            prod.get("mobilePrice"),
+                            final_dto.get("mobilePrice"),
+                        ]:
+                            if val is not None:
+                                try:
+                                    f = float(val)
+                                    if f > 0:
+                                        price_candidates.append(f)
+                                except (ValueError, TypeError):
+                                    pass
+
+                        if price_candidates:
+                            raw_price = f"{min(price_candidates):.2f}"
                         else:
                             raw_price = prod.get("displayPriceStr") or prod.get("priceStr") or ""
 
@@ -177,7 +204,7 @@ class MarketplaceListingCollector:
                 logger.info("N11: Max sayfa limitine ulaşıldı (%d), durduruluyor.", self.max_pages)
                 break
 
-            url = self.base_url if page == 1 else self._build_page_url(page)
+            url = self._build_page_url(page)
             logger.info("N11 sayfa %d çekiliyor: %s", page, url)
 
             try:
