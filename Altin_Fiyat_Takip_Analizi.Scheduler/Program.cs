@@ -42,13 +42,7 @@ builder.Services.AddQuartz(q =>
         .ForJob(ownPriceSyncJobKey)
         .WithIdentity("OwnPriceSyncJob-trigger")
         .WithCronSchedule(builder.Configuration["Quartz:OwnPriceSyncCron"] ?? "0 */1 * * * ?"));
-
-    var bankJobKey = new JobKey("BankPriceCollectionJob");
-    q.AddJob<BankPriceCollectionJob>(opts => opts.WithIdentity(bankJobKey));
-    q.AddTrigger(opts => opts
-        .ForJob(bankJobKey)
-        .WithIdentity("BankPriceCollectionJob-trigger")
-        .WithCronSchedule(builder.Configuration["Quartz:BankPriceCollectionCron"] ?? "0 */5 * * * ?"));
+    // Banka fiyatları artık kullanıcı tarafından paneldeki 'Fiyatları Güncelle' butonuyla anlık tetiklenmektedir.
 });
 
 builder.Services.AddQuartzHostedService(opts => opts.WaitForJobsToComplete = true);

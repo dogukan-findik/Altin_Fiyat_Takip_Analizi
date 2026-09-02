@@ -2,11 +2,11 @@ using Altin_Fiyat_Takip_Analizi.Application.Interfaces;
 
 namespace Altin_Fiyat_Takip_Analizi.API.BackgroundServices;
 
-/// <summary>
-/// API process'i ayakta olduğu sürece her 10 dakikada bir
+/// <özet>
+/// API process'i ayakta olduğu sürece her 2 dakikada bir
 /// pazaryeri fiyatlarını (Pazarama, N11, PTTAVM) sırayla tarayarak
 /// sistemdeki tüm pazaryeri altın fiyatlarının her daim güncel kalmasını sağlar.
-/// </summary>
+/// </özet>
 public class MarketplacePriceSyncBackgroundService : BackgroundService
 {
     private readonly IScraperRunnerService _scraperRunner;

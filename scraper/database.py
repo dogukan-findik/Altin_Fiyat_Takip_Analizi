@@ -1,3 +1,4 @@
+import time
 import pyodbc
 from contextlib import contextmanager
 from scraper.config import DB_CONNECTION_STRING
@@ -13,11 +14,23 @@ class DatabaseManager:
 
     @contextmanager
     def get_connection(self):
-        conn = pyodbc.connect(self.connection_string)
+        conn = None
+        for attempt in range(1, 4):
+            try:
+                conn = pyodbc.connect(self.connection_string, timeout=30)
+                break
+            except pyodbc.OperationalError as exc:
+                if attempt == 3:
+                    logger.error("Veritabanı bağlantı hatası (3 deneme başarısız): %s", exc)
+                    raise
+                logger.warning("Veritabanına bağlanılamadı, %d. deneme tekrar ediliyor... (%s)", attempt + 1, exc)
+                time.sleep(2.0)
+
         try:
             yield conn
         finally:
-            conn.close()
+            if conn:
+                conn.close()
 
     def start_collection_job(self, job_type: str = "Scheduled") -> int:
         """CollectionJobs tablosuna 'Running' statusunde kayit acar, Id'sini doner."""

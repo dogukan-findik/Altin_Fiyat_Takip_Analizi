@@ -112,23 +112,47 @@ public class PriceComparisonService : IPriceComparisonService
     {
         var products = (await _productRepo.GetAllAsync()).Where(p => p.IsActive).ToList();
         var ownPrices = await _ownPriceRepo.GetQueryable()
+            .AsNoTracking()
             .Where(o => o.SourceType == SellerType.Bank)
             .ToListAsync();
         var sellers = await _sellerRepo.GetQueryable()
+            .AsNoTracking()
             .Where(s => s.Type == sellerType && s.IsActive)
             .ToListAsync();
 
+        var sellerIds = sellers.Select(s => s.Id).ToList();
+
+        // 1. Bankalara/satıcı tipine ait SellerProduct'ları çek
+        var sellerProducts = await _sellerProductRepo.GetQueryable()
+            .AsNoTracking()
+            .Where(sp => sellerIds.Contains(sp.SellerId) && sp.ProductId != null)
+            .Select(sp => new { sp.Id, sp.SellerId, ProductId = sp.ProductId!.Value })
+            .ToListAsync();
+
+        var spIds = sellerProducts.Select(sp => sp.Id).ToList();
         var last24h = DateTime.UtcNow.AddHours(-24);
 
-        var latestPrices = await _priceRepo.GetQueryable()
-            .Include(p => p.SellerProduct)
-            .Where(p => p.CollectedAt >= last24h
-                        && p.IsAvailable
-                        && p.SellerProduct.Seller.Type == sellerType
-                        && p.SellerProduct.ProductId != null)
-            .GroupBy(p => new { p.SellerProduct.SellerId, p.SellerProduct.ProductId })
-            .Select(g => g.OrderByDescending(p => p.CollectedAt).First())
+        // 2. Sadece bu SellerProductId'ler için son 24 saatin en son fiyatlarını çek (Hızlı ve indexli)
+        var maxPriceRecords = await _priceRepo.GetQueryable()
+            .AsNoTracking()
+            .Where(p => spIds.Contains(p.SellerProductId) && p.CollectedAt >= last24h && p.IsAvailable)
+            .GroupBy(p => p.SellerProductId)
+            .Select(g => new
+            {
+                SellerProductId = g.Key,
+                MaxId = g.Max(p => p.Id)
+            })
             .ToListAsync();
+
+        var maxIds = maxPriceRecords.Select(x => x.MaxId).ToList();
+
+        var latestPriceList = await _priceRepo.GetQueryable()
+            .AsNoTracking()
+            .Where(p => maxIds.Contains(p.Id))
+            .Select(p => new { p.SellerProductId, p.Price, p.CollectedAt })
+            .ToListAsync();
+
+        var priceBySpId = latestPriceList.ToDictionary(p => p.SellerProductId);
 
         var result = new List<ProductSellerBreakdownDto>();
 
@@ -151,15 +175,15 @@ public class PriceComparisonService : IPriceComparisonService
 
             foreach (var seller in sellers)
             {
-                var match = latestPrices.FirstOrDefault(p =>
-                    p.SellerProduct.SellerId == seller.Id && p.SellerProduct.ProductId == product.Id);
+                var spMatch = sellerProducts.FirstOrDefault(sp => sp.SellerId == seller.Id && sp.ProductId == product.Id);
+                decimal? price = (spMatch != null && priceBySpId.TryGetValue(spMatch.Id, out var ph)) ? ph.Price : null;
 
                 dto.SellerPrices.Add(new SellerPriceEntryDto
                 {
                     SellerId = seller.Id,
                     SellerName = seller.Name,
-                    Price = match?.Price,
-                    DiffFromOurs = match is not null ? ourPrice - match.Price : null
+                    Price = price,
+                    DiffFromOurs = price.HasValue ? ourPrice - price.Value : null
                 });
             }
 

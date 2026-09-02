@@ -16,20 +16,36 @@
                 <p class="text-muted mb-0">QNB Finans, Garanti ve Yapı Kredi bankalarının altın fiyatları, bizim fiyatlarımızla karşılaştırılıyor.</p>
             </div>
         </div>
-        <div class="text-end">
+        <div class="d-flex flex-column align-items-end gap-1">
             @if (_lastUpdated.HasValue)
             {
-                <small class="text-muted d-block">
-                    <i class="bi bi-clock me-1"></i>Son güncelleme: @_lastUpdated.Value.ToString("HH:mm:ss")
+                <small class="text-muted">
+                    <i class="bi bi-clock me-1"></i>Son Veri: @_lastUpdated.Value.ToString("HH:mm:ss")
                 </small>
             }
-            <small class="text-muted d-block">
-                <i class="bi bi-arrow-repeat me-1"></i>Her 5 dakikada otomatik yenilenir
-            </small>
-            @if (_refreshing)
-            {
-                <span class="badge bg-info text-dark mt-1"><span class="spinner-border spinner-border-sm me-1" role="status"></span>Yenileniyor...</span>
-            }
+            <div class="d-flex align-items-center gap-2 mt-1">
+                @if (_isSyncing)
+                {
+                    <span class="badge bg-warning text-dark border border-warning px-2 py-1" style="font-size: 0.82rem;">
+                        <span class="spinner-border spinner-border-sm me-1 text-dark" role="status"></span>
+                        ⚡ Bankalar Canlı Taranıyor...
+                    </span>
+                }
+                else if (_lastLoadedScrapedAt.HasValue)
+                {
+                    <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.82rem;">
+                        <i class="bi bi-check2-circle me-1"></i>Son Tarama: @_lastLoadedScrapedAt.Value.ToLocalTime().ToString("HH:mm:ss")
+                    </span>
+                }
+
+                <button class="btn btn-primary btn-sm shadow-sm d-flex align-items-center gap-2 px-3 py-1"
+                        @onclick="TriggerLiveSyncAsync"
+                        disabled="@(_isSyncing || _refreshing)"
+                        title="Banka altın kurlarını canlı tara ve güncelle">
+                    <i class="bi bi-arrow-clockwise @(_isSyncing || _refreshing ? "spin" : "")"></i>
+                    <span>@(_isSyncing ? "Taranıyor..." : "Fiyatları Güncelle")</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -182,12 +198,23 @@
     }
 </div>
 
+<style>
+    .spin {
+        animation: spin 1s linear infinite;
+        display: inline-block;
+    }
+    @@keyframes spin {
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
 @code {
     private List<ProductSellerBreakdownDto>? _breakdown;
     private bool _loading = true;
     private bool _refreshing = false;
+    private bool _isSyncing = false;
     private DateTime? _lastUpdated;
-    private System.Threading.Timer? _refreshTimer;
+    private DateTime? _lastLoadedScrapedAt;
 
     // Sadece gerçek banka isimleri - diğer satıcılar banka sayfasında gösterilmeyecek
     private static readonly HashSet<string> BankNames = new(StringComparer.OrdinalIgnoreCase)
@@ -222,17 +249,21 @@
         await LoadDataAsync();
         _loading = false;
 
-        // 5 dakikada bir otomatik yenile (ilk tetikleme 5 dakika sonra)
-        _refreshTimer = new System.Threading.Timer(
-            async _ => await InvokeAsync(RefreshDataAsync),
-            null,
-            TimeSpan.FromMinutes(5),
-            TimeSpan.FromMinutes(5));
+        // Sayfa açıldığında son tarama zamanını sorgula
+        try
+        {
+            var status = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=bank");
+            if (status?.LastScrapedAt.HasValue == true)
+            {
+                _lastLoadedScrapedAt = status.LastScrapedAt.Value;
+            }
+        }
+        catch { }
     }
 
     private async Task LoadDataAsync()
     {
-        var raw = await Api.GetAsync<List<ProductSellerBreakdownDto>>("api/v1/products/seller-breakdown?sellerType=Bank");
+        var raw = await Api.GetAsync<List<ProductSellerBreakdownDto>>($"api/v1/products/seller-breakdown?sellerType=Bank&_t={DateTime.UtcNow.Ticks}");
 
         if (raw != null)
         {
@@ -255,6 +286,41 @@
         }
     }
 
+    private async Task TriggerLiveSyncAsync()
+    {
+        if (!Api.IsAuthenticated || _isSyncing) return;
+
+        _isSyncing = true;
+        StateHasChanged();
+
+        try
+        {
+            // 1. Python banka scraper'ını anlık olarak tetikle ve tamamlanmasını bekle
+            await Api.PostEmptyAsync<object>("api/v1/scraper/trigger?platform=bank&force=true&wait=true");
+        }
+        catch
+        {
+            // Scraper hatası oluşsa bile verileri yenilemeyi dene
+        }
+
+        // 2. Güncellenen kurları çek
+        await LoadDataAsync();
+
+        // 3. Son tarama zaman damgasını güncelle
+        try
+        {
+            var status = await Api.GetAsync<ScraperStatusDto>("api/v1/scraper/status?platform=bank");
+            if (status?.LastScrapedAt.HasValue == true)
+            {
+                _lastLoadedScrapedAt = status.LastScrapedAt.Value;
+            }
+        }
+        catch { }
+
+        _isSyncing = false;
+        StateHasChanged();
+    }
+
     private async Task RefreshDataAsync()
     {
         if (!Api.IsAuthenticated) return;
@@ -270,7 +336,6 @@
 
     public void Dispose()
     {
-        _refreshTimer?.Dispose();
     }
 
     /// <summary>

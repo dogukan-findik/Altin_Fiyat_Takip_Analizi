@@ -53,17 +53,25 @@ public class ScraperRunnerService : IScraperRunnerService
             using var scope = _scopeFactory.CreateScope();
             var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
-            string urlFilter = key switch
-            {
-                "n11" => "%n11.com%",
-                "pttavm" => "%pttavm.com%",
-                "pazarama" => "%pazarama.com%",
-                _ => $"%{key}%"
-            };
+            var query = db.PriceHistories.AsNoTracking();
 
-            var dbDt = db.PriceHistories
-                .AsNoTracking()
-                .Where(p => EF.Functions.Like(p.SellerProduct.ExternalUrl, urlFilter))
+            if (key is "bank" or "banks")
+            {
+                query = query.Where(p => p.SellerProduct.Seller.Type == Altin_Fiyat_Takip_Analizi.Domain.Enums.SellerType.Bank);
+            }
+            else
+            {
+                string urlFilter = key switch
+                {
+                    "n11" => "%n11.com%",
+                    "pttavm" => "%pttavm.com%",
+                    "pazarama" => "%pazarama.com%",
+                    _ => $"%{key}%"
+                };
+                query = query.Where(p => EF.Functions.Like(p.SellerProduct.ExternalUrl, urlFilter));
+            }
+
+            var dbDt = query
                 .OrderByDescending(p => p.Id)
                 .Select(p => (DateTime?)p.CollectedAt)
                 .FirstOrDefault();
@@ -213,6 +221,7 @@ public class ScraperRunnerService : IScraperRunnerService
             "pazarama" => "-m scraper.main --seller pazarama",
             "pttavm" => "-m scraper.main --seller pttavm",
             "n11" => "-m scraper.main --seller n11",
+            "bank" or "banks" => "-m scraper.sync_banks",
             "own" => "-m scraper.sync_own_prices",
             _ => "-m scraper.main"
         };

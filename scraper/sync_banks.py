@@ -1,4 +1,4 @@
-﻿import sys
+import sys
 import time
 import json
 import argparse
@@ -115,8 +115,6 @@ def run(external_job_id: int | None = None):
                 )
                 db.insert_price(sp_id, price, True, collection_job_id=job_id)
                 success += 1
-
-            time.sleep(RATE_LIMIT_SECONDS)
 
         db.complete_collection_job(job_id, processed, success, failed)
 

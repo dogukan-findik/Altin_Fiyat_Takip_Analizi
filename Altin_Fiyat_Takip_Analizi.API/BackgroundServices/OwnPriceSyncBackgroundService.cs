@@ -29,10 +29,20 @@ public class OwnPriceSyncBackgroundService : BackgroundService
             "OwnPriceSyncBackgroundService başlatıldı — her {Minutes} dakikada bir çalışacak.",
             Interval.TotalMinutes);
 
-        // İlk çalışmayı hemen yap (başlangıç gecikmesi olmadan)
+        // API ve veritabanı bağlantı havuzunun hazır olması için başlangıç gecikmesi
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(3), stoppingToken);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
+        }
+
+        // İlk çalışmayı yap
         await RunSyncAsync(stoppingToken);
 
-        // Sonrakiler 5 dakika bekleyerek
+        // Sonrakiler 1 dakika bekleyerek
         using var timer = new PeriodicTimer(Interval);
         while (!stoppingToken.IsCancellationRequested)
         {
