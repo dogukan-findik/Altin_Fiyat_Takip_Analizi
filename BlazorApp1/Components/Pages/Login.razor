@@ -1,50 +1,132 @@
-﻿@page "/login"
+@page "/login"
 @using Altin_Fiyat_Takip_Analizi.Web.Models
 @using Altin_Fiyat_Takip_Analizi.Web.Services
 @inject ApiService Api
 @inject NavigationManager Nav
 
-<PageTitle>Giriş Yap</PageTitle>
+<PageTitle>Giriş Yap — Ahlatcı Altın Takip Portalı</PageTitle>
 
-<div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);">
-    <div style="width: 100%; max-width: 440px; padding: 1rem;">
-        <div class="text-center mb-4">
-            <div style="font-size: 3.5rem; margin-bottom: .75rem;">💰</div>
-            <h1 style="color: #e2b03e; font-size: 1.5rem; margin-bottom: .25rem;">Altın Fiyat Takip Analizi</h1>
-            <p style="color: rgba(255,255,255,.5); font-size: .9rem;">Hesabınıza giriş yapın</p>
+<div class="login-screen-bg">
+    <div class="login-modal-wrapper row g-0">
+        <!-- Sol Panel: Kurumsal Tanıtım & Özellikler -->
+        <div class="col-lg-6 login-hero-side d-flex flex-column justify-content-between">
+            <div>
+                <!-- Brand Badge -->
+                <div class="d-flex align-items-center gap-3 mb-4">
+                    <span style="display:inline-flex; align-items:center; justify-content:center; width:52px; height:52px; border-radius:14px; background:linear-gradient(135deg, rgba(226,176,62,0.22), rgba(226,176,62,0.06)); border:1px solid rgba(226,176,62,0.4); color:var(--gold-400); font-size:1.75rem; box-shadow:0 0 25px rgba(226,176,62,0.25);">
+                        💰
+                    </span>
+                    <div>
+                        <h3 class="font-heading fw-bold text-white mb-0" style="letter-spacing:-0.02em;">Ahlatcı Finans</h3>
+                        <span class="text-gold-gradient fw-bold" style="font-size:0.85rem; letter-spacing:0.04em;">ALTIN TAKİP & ANALİZ SİSTEMİ</span>
+                    </div>
+                </div>
+
+                <h2 class="text-white font-heading fw-bold mb-3" style="font-size:1.75rem; line-height:1.25;">
+                    Piyasa Kurlarını ve Arbitrajı <span class="text-gold-gradient">Canlı Yönetin</span>
+                </h2>
+                
+
+                <!-- Value Proposition Highlights -->
+                <div class="d-flex flex-column gap-3 mb-4">
+                    <div class="d-flex align-items-center gap-3 p-2.5 rounded-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px; height:36px; background:rgba(59,130,246,0.15); color:var(--blue-400); font-size:1.1rem; flex-shrink:0;">
+                            <i class="bi bi-bank"></i>
+                        </div>
+                        <div>
+                            <div class="text-white fw-semibold" style="font-size:0.85rem;">Banka & Pazaryeri Entegrasyonu</div>
+                            <small class="text-muted" style="font-size:0.75rem;">QNB, Garanti, YK, N11, PTTAVM, Pazarama</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-2.5 rounded-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px; height:36px; background:rgba(16,185,129,0.15); color:var(--emerald-400); font-size:1.1rem; flex-shrink:0;">
+                            <i class="bi bi-graph-up-arrow"></i>
+                        </div>
+                        <div>
+                            <div class="text-white fw-semibold" style="font-size:0.85rem;">Anlık Fark ve Arbitraj Tespiti</div>
+                            <small class="text-muted" style="font-size:0.75rem;">Mağaza kurları ile rakipler arasındaki fiyat makası</small>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center gap-3 p-2.5 rounded-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:36px; height:36px; background:rgba(226,176,62,0.15); color:var(--gold-400); font-size:1.1rem; flex-shrink:0;">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                        <div>
+                            <div class="text-white fw-semibold" style="font-size:0.85rem;">Python Scraper Motoru</div>
+                            <small class="text-muted" style="font-size:0.75rem;">Otomatik arka plan senkronizasyonu ve tek tıkla tarama</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Badge -->
+            <div class="pt-3 d-flex align-items-center justify-content-between" style="border-top:1px solid rgba(255,255,255,0.06);">
+                <div class="pulse-indicator-container pulse-live-green" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25);">
+                    <span class="pulse-dot pulse-dot-green"></span>
+                    <span class="text-white" style="font-size:0.75rem;">Canlı Veri Ağı Aktif</span>
+                </div>
+                <small class="text-muted" style="font-size:0.75rem;">v2.4 Finans Sürümü</small>
+            </div>
         </div>
 
-        <div class="login-container">
+        <!-- Sağ Panel: Giriş Formu -->
+        <div class="col-lg-6 login-form-side d-flex flex-column justify-content-center">
+            <div class="mb-4">
+                <h3 class="font-heading fw-bold text-white mb-1" style="font-size:1.75rem;">Hoş Geldiniz</h3>
+                <p class="text-slate-400 mb-0" style="font-size:0.88rem;">Yetkili kullanıcı bilgilerinizle sisteme giriş yapın</p>
+            </div>
+
             <EditForm Model="_loginModel" OnValidSubmit="HandleLogin">
-                <div class="form-group">
-                    <label><i class="bi bi-person me-1"></i> Kullanıcı Adı</label>
-                    <InputText @bind-Value="_loginModel.Username" class="form-control" placeholder="Kullanıcı adınızı girin" />
+                <div class="login-input-group">
+                    <label><i class="bi bi-person-fill me-1 text-gold"></i> Kullanıcı Adı</label>
+                    <div class="login-input-wrapper">
+                        <i class="bi bi-person-badge input-icon"></i>
+                        <InputText @bind-Value="_loginModel.Username" class="form-control" placeholder="Kullanıcı adınızı girin" autocomplete="username" />
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label><i class="bi bi-lock me-1"></i> Şifre</label>
-                    <InputText @bind-Value="_loginModel.Password" type="password" class="form-control" placeholder="Şifrenizi girin" />
+
+                <div class="login-input-group">
+                    <label><i class="bi bi-shield-lock-fill me-1 text-gold"></i> Şifre</label>
+                    <div class="login-input-wrapper">
+                        <i class="bi bi-key-fill input-icon"></i>
+                        <InputText @bind-Value="_loginModel.Password" type="@(_showPassword ? "text" : "password")" class="form-control" placeholder="Şifrenizi girin" autocomplete="current-password" />
+                        <button type="button" class="toggle-pwd-btn" @onclick="TogglePassword" title="@(_showPassword ? "Şifreyi Gizle" : "Şifreyi Göster")">
+                            <i class="bi @(_showPassword ? "bi-eye-slash-fill" : "bi-eye-fill")"></i>
+                        </button>
+                    </div>
                 </div>
 
                 @if (!string.IsNullOrEmpty(_errorMessage))
                 {
-                    <div class="alert" style="background: #fde2e2; color: #991b1b; padding: .75rem 1rem; font-size: .9rem; border-radius: 8px;">
-                        <i class="bi bi-exclamation-circle me-1"></i> @_errorMessage
+                    <div class="alert mb-3 d-flex align-items-center gap-2" style="background:rgba(239,68,68,0.15); color:#fca5a5; border:1px solid rgba(239,68,68,0.3); border-radius:12px; font-size:0.85rem; padding:0.75rem 1rem;">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0" style="font-size:1.1rem; color:#f87171;"></i>
+                        <span>@_errorMessage</span>
                     </div>
                 }
 
-                <button type="submit" class="btn btn-primary" disabled="@_isLoading"
-                        style="background: linear-gradient(135deg, #e2b03e, #c9982e); border: none; color: #1a1a2e;">
-                    @if (_isLoading)
-                    {
-                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        <span>Giriş yapılıyor...</span>
-                    }
-                    else
-                    {
-                        <i class="bi bi-box-arrow-in-right me-1"></i>
-                        <span>Giriş Yap</span>
-                    }
-                </button>
+                <div class="pt-2 mb-4">
+                    <button type="submit" class="btn btn-gold w-100 py-3 rounded-3 font-heading fw-bold d-flex align-items-center justify-content-center gap-2" 
+                            disabled="@_isLoading" style="font-size:1rem; letter-spacing:0.02em;">
+                        @if (_isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status"></span>
+                            <span>Doğrulanıyor...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-box-arrow-in-right fs-5"></i>
+                            <span>Sisteme Giriş Yap</span>
+                        }
+                    </button>
+                </div>
+
+                <div class="text-center pt-3" style="border-top:1px solid rgba(255,255,255,0.06);">
+                    <small class="text-muted d-inline-flex align-items-center gap-1" style="font-size:0.75rem;">
+                        <i class="bi bi-lock-fill text-gold"></i> 256-bit SSL Korumalı Ahlatcı Kuyumculuk Portalı
+                    </small>
+                </div>
             </EditForm>
         </div>
     </div>
@@ -54,9 +136,18 @@
     private LoginDto _loginModel = new();
     private string? _errorMessage;
     private bool _isLoading;
+    private bool _showPassword = false;
+
+    private void TogglePassword() => _showPassword = !_showPassword;
 
     private async Task HandleLogin()
     {
+        if (string.IsNullOrWhiteSpace(_loginModel.Username) || string.IsNullOrWhiteSpace(_loginModel.Password))
+        {
+            _errorMessage = "Lütfen kullanıcı adı ve şifrenizi eksiksiz girin.";
+            return;
+        }
+
         _isLoading = true;
         _errorMessage = null;
 

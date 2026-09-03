@@ -1,80 +1,828 @@
+/* ==========================================================================
+   ALTIN FIYAT TAKIP VE ANALIZI — NATIVE & MODERN DESIGN SYSTEM
+   Theme: High-Performance Luxury Fintech / Glassmorphism
+   Typography: Outfit (Headings/Metrics) + Inter (Interface/Tables)
+   ========================================================================== */
+
 :root {
-    --primary: #1a1a2e; --primary-light: #16213e;
-    --accent: #e2b03e; --accent-hover: #c9982e;
-    --success: #10b981; --danger: #ef4444; --warning: #f59e0b; --info: #3b82f6;
-    --text: #1e293b; --text-muted: #64748b;
-    --bg: #f1f5f9; --card-bg: #ffffff; --border: #e2e8f0;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,.08); --shadow: 0 4px 12px rgba(0,0,0,.08);
-    --shadow-lg: 0 10px 30px rgba(0,0,0,.12);
-    --radius: 12px; --radius-sm: 8px; --radius-lg: 16px; --transition: .2s ease;
+    /* Brand Gold Palette */
+    --gold-300: #fae19c;
+    --gold-400: #f5c85d;
+    --gold-500: #e2b03e;
+    --gold-600: #c9982e;
+    --gold-700: #a4761a;
+    --gold-gradient: linear-gradient(135deg, #fce5a3 0%, #e2b03e 50%, #c9982e 100%);
+    --gold-glow: 0 4px 20px rgba(226, 176, 62, 0.35);
+
+    /* Neutral & Surfaces */
+    --slate-950: #070b13;
+    --slate-900: #0f172a;
+    --slate-800: #1e293b;
+    --slate-700: #334155;
+    --slate-600: #475569;
+    --slate-500: #64748b;
+    --slate-400: #94a3b8;
+    --slate-300: #cbd5e1;
+    --slate-200: #e2e8f0;
+    --slate-100: #f1f5f9;
+    --slate-50:  #f8fafc;
+
+    /* Semantic Accents */
+    --emerald-500: #10b981;
+    --emerald-600: #059669;
+    --emerald-soft: #ecfdf5;
+    --emerald-border: #a7f3d0;
+    
+    --rose-500: #f43f5e;
+    --rose-600: #e11d48;
+    --rose-soft: #fff1f2;
+    --rose-border: #fecdd3;
+
+    --blue-500: #3b82f6;
+    --blue-600: #2563eb;
+    --blue-soft: #eff6ff;
+
+    --violet-500: #8b5cf6;
+    --violet-600: #7c3aed;
+
+    /* Semantic Mappings */
+    --primary: var(--slate-900);
+    --primary-light: var(--slate-800);
+    --accent: var(--gold-500);
+    --accent-hover: var(--gold-600);
+    --success: var(--emerald-500);
+    --danger: var(--rose-500);
+    --warning: #f59e0b;
+    --info: var(--blue-500);
+
+    --text: #0f172a;
+    --text-muted: #64748b;
+    --text-light: #94a3b8;
+
+    /* Elevated Surfaces (Glass & Clean Light) */
+    --bg: #f8fafc;
+    --card-bg: rgba(255, 255, 255, 0.92);
+    --glass-bg: rgba(255, 255, 255, 0.82);
+    --border: rgba(226, 232, 240, 0.85);
+    --border-strong: #cbd5e1;
+
+    /* Multi-layered Native Shadows */
+    --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.04), 0 1px 2px rgba(15, 23, 42, 0.03);
+    --shadow-card: 0 4px 16px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03), 0 0 0 1px rgba(15, 23, 42, 0.04);
+    --shadow-hover: 0 16px 32px -4px rgba(15, 23, 42, 0.09), 0 6px 12px -2px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(226, 176, 62, 0.2);
+    --shadow-lg: 0 20px 40px -8px rgba(15, 23, 42, 0.12);
+
+    /* Radii & Timings */
+    --radius-xs: 6px;
+    --radius-sm: 10px;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --radius-pill: 9999px;
+    --transition: 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    --transition-slow: 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
+/* ==========================================================================
+   GLOBAL RESET & TYPOGRAPHY
+   ========================================================================== */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 html, body {
     font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: var(--bg); color: var(--text); min-height: 100vh; -webkit-font-smoothing: antialiased;
+    color: var(--text);
+    min-height: 100vh;
+    background-color: var(--bg);
+    background-image: 
+        radial-gradient(at 0% 0%, rgba(226, 176, 62, 0.05) 0px, transparent 45%),
+        radial-gradient(at 100% 0%, rgba(59, 130, 246, 0.04) 0px, transparent 45%),
+        radial-gradient(at 50% 100%, rgba(15, 23, 42, 0.02) 0px, transparent 50%);
+    background-attachment: fixed;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
-a { color: var(--info); text-decoration: none; }
-a:hover { color: #2563eb; }
-h1,h2,h3,h4,h5,h6 { font-weight: 700; letter-spacing: -.01em; }
-.page { display: flex; min-height: 100vh; }
-.sidebar { width: 280px; background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%); flex-shrink: 0; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 100; box-shadow: 4px 0 20px rgba(0,0,0,.15); }
-main { flex: 1; min-width: 0; background: var(--bg); }
-.content { padding: 2rem 2.5rem !important; max-width: 1600px; margin: 0 auto; }
-.btn { border-radius: var(--radius-sm); font-weight: 600; transition: all var(--transition); }
-.btn:focus { box-shadow: 0 0 0 3px rgba(59,130,246,.35); }
-.btn-primary { background: var(--info); border-color: var(--info); color: #fff; }
-.btn-primary:hover { background: #2563eb; border-color: #2563eb; transform: translateY(-1px); box-shadow: var(--shadow); }
-.btn-gold { background: var(--accent); border-color: var(--accent); color: var(--primary); font-weight: 700; }
-.btn-gold:hover { background: var(--accent-hover); border-color: var(--accent-hover); transform: translateY(-1px); box-shadow: var(--shadow); }
-.btn-success { background: var(--success); border-color: var(--success); }
-.btn-success:hover { background: #059669; transform: translateY(-1px); }
-.card { border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); transition: all var(--transition); overflow: hidden; }
-.card:hover { box-shadow: var(--shadow); }
-.card-header { background: var(--card-bg); border-bottom: 1px solid var(--border); font-weight: 600; padding: 1rem 1.25rem; }
-.stat-card { border-radius: var(--radius); padding: 1.5rem; color: #fff; position: relative; overflow: hidden; transition: all .3s ease; }
-.stat-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
-.stat-card .stat-icon { font-size: 2.5rem; opacity: .2; position: absolute; right: 1rem; top: 1rem; }
-.stat-card .stat-value { font-size: 2rem; font-weight: 800; line-height: 1.2; }
-.stat-card .stat-label { font-size: .85rem; opacity: .85; font-weight: 500; margin-top: .25rem; }
-.stat-green { background: linear-gradient(135deg, #10b981, #059669); }
-.stat-red { background: linear-gradient(135deg, #ef4444, #dc2626); }
-.stat-blue { background: linear-gradient(135deg, #3b82f6, #2563eb); }
-.stat-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
-.stat-amber { background: linear-gradient(135deg, #f59e0b, #d97706); }
-.stat-slate { background: linear-gradient(135deg, #64748b, #475569); }
-.table { font-size: .9rem; margin-bottom: 0; }
-.table thead th { background: #f8fafc; border-bottom: 2px solid var(--border); font-weight: 700; text-transform: uppercase; font-size: .75rem; letter-spacing: .05em; color: var(--text-muted); padding: .875rem 1rem; white-space: nowrap; }
-.table tbody td { padding: .875rem 1rem; vertical-align: middle; border-bottom: 1px solid #f1f5f9; }
-.table tbody tr:hover { background: #f8fafc; }
-.table tbody tr:last-child td { border-bottom: none; }
-.badge-success-soft { background: #d1fae5; color: #065f46; font-weight: 600; }
-.badge-danger-soft { background: #fde2e2; color: #991b1b; font-weight: 600; }
-.login-container { max-width: 440px; margin: 0 auto; padding: 3rem 2.5rem; background: var(--card-bg); border-radius: var(--radius-lg); box-shadow: var(--shadow-lg); }
-.login-container h1 { text-align: center; font-size: 1.75rem; margin-bottom: 2rem; color: var(--primary); }
-.login-container .form-group { margin-bottom: 1.25rem; }
-.login-container .form-group label { font-weight: 600; color: var(--text); margin-bottom: .5rem; display: block; font-size: .9rem; }
-.login-container .form-control { border-radius: var(--radius-sm); border: 2px solid var(--border); padding: .75rem 1rem; font-size: .95rem; transition: border-color var(--transition); width: 100%; }
-.login-container .form-control:focus { border-color: var(--info); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-.login-container .btn-primary { width: 100%; padding: .875rem; font-size: 1rem; font-weight: 700; margin-top: .5rem; border-radius: var(--radius-sm); border: none; cursor: pointer; }
-.login-container .error-message { color: var(--danger); font-size: .9rem; margin-top: .75rem; text-align: center; }
-.alert { border-radius: var(--radius-sm); border: none; font-weight: 500; }
-.page-header { margin-bottom: 2rem; }
-.page-header h2 { font-size: 1.75rem; margin-bottom: .25rem; }
-.page-header p { color: var(--text-muted); font-size: .95rem; margin-bottom: 0; }
-.form-control, .form-select { border-radius: var(--radius-sm); border: 2px solid var(--border); padding: .625rem 1rem; transition: border-color var(--transition); }
-.form-control:focus, .form-select:focus { border-color: var(--info); box-shadow: 0 0 0 3px rgba(59,130,246,.15); }
-.blazor-error-boundary { background: var(--danger); padding: 1rem 1.5rem; color: #fff; border-radius: var(--radius-sm); margin: 1rem 0; }
-.blazor-error-boundary::after { content: "Bir hata olustu."; }
-.valid.modified:not([type=checkbox]) { outline: 2px solid var(--success); }
-.invalid { outline: 2px solid var(--danger); }
-.validation-message { color: var(--danger); font-size: .85rem; margin-top: .25rem; }
-.text-gold { color: var(--accent) !important; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-@media (max-width: 768px) {
-    .sidebar { width: 100%; height: auto; position: relative; }
-    .page { flex-direction: column; }
-    .content { padding: 1rem !important; }
-    .stat-card .stat-value { font-size: 1.5rem; }
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+    font-family: "Outfit", "Inter", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: var(--slate-900);
+}
+
+.num-tabular {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+}
+
+a {
+    color: var(--blue-600);
+    text-decoration: none;
+    transition: color var(--transition);
+}
+a:hover {
+    color: var(--blue-500);
+}
+
+/* ==========================================================================
+   NATIVE APP LAYOUT STRUCTURE
+   ========================================================================== */
+.page {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* Sidebar with Luxury Space Obsidian gradient */
+.sidebar {
+    width: 275px;
+    background: linear-gradient(180deg, #090e1a 0%, #0f172a 60%, #0b1120 100%);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    z-index: 100;
+    box-shadow: 6px 0 25px rgba(0, 0, 0, 0.18);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Native Topbar Header */
+.topbar-native {
+    height: 60px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+    padding: 0 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 90;
+    transition: all var(--transition);
+}
+
+.content {
+    padding: 2rem 2.5rem !important;
+    max-width: 1680px;
+    width: 100%;
+    margin: 0 auto;
+    flex: 1;
+}
+
+/* Footer */
+footer {
+    background: rgba(255, 255, 255, 0.5);
+    backdrop-filter: blur(10px);
+}
+
+/* ==========================================================================
+   INTERACTIVE BUTTONS (NATIVE SPRING & GLOSS)
+   ========================================================================== */
+.btn {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 0.55rem 1.15rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    transition: all var(--transition);
+    cursor: pointer;
+    user-select: none;
+    border: 1px solid transparent;
+}
+
+.btn:active {
+    transform: scale(0.97);
+}
+
+.btn:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(226, 176, 62, 0.35);
+}
+
+/* Gold Gradient Button */
+.btn-gold {
+    background: var(--gold-gradient);
+    color: #0b101d !important;
+    border: none;
+    font-weight: 700;
+    box-shadow: var(--gold-glow);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-gold::before {
+    content: '';
+    position: absolute;
+    top: 0; left: -100%; width: 100%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent);
+    transition: left 0.6s ease;
+}
+
+.btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(226, 176, 62, 0.45);
+    color: #0b101d;
+}
+
+.btn-gold:hover::before {
+    left: 100%;
+}
+
+/* Primary Indigo/Sapphire Button */
+.btn-primary {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    border-color: #2563eb;
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(37, 99, 235, 0.25);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+}
+
+/* Native Secondary / Glass Button */
+.btn-outline-secondary, .btn-glass {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid var(--border-strong);
+    color: var(--slate-700);
+    backdrop-filter: blur(8px);
+}
+
+.btn-outline-secondary:hover, .btn-glass:hover {
+    background: #ffffff;
+    border-color: var(--slate-400);
+    color: var(--slate-900);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-subtle);
+}
+
+/* ==========================================================================
+   CARDS & GLASS CONTAINERS
+   ========================================================================== */
+.card {
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-card);
+    transition: transform var(--transition), box-shadow var(--transition), border-color var(--transition);
+    overflow: hidden;
+    position: relative;
+}
+
+.card-hoverable:hover, .card.card-interactive:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(226, 176, 62, 0.4);
+}
+
+.card-header {
+    background: rgba(255, 255, 255, 0.7);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.35rem;
+    font-weight: 700;
+    font-family: "Outfit", sans-serif;
+    color: var(--slate-800);
+}
+
+/* Force pure white on dark card headers and seller banners */
+.card-header h1,
+.card-header h2,
+.card-header h3,
+.card-header h4,
+.card-header h5,
+.card-header h6,
+.card-header .seller-name,
+.product-card-header h5,
+.seller-card-header h5 {
+    color: #ffffff !important;
+}
+
+.seller-card-header {
+    background: linear-gradient(135deg, #090e1a 0%, #1e293b 100%) !important;
+    border-bottom: 2px solid rgba(226, 176, 62, 0.35) !important;
+    color: #ffffff !important;
+}
+.seller-card-header h5 {
+    color: #ffffff !important;
+    font-weight: 800 !important;
+    font-size: 1.15rem !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+.seller-card-header small,
+.seller-card-header small span {
+    color: #cbd5e1 !important;
+}
+
+.card-body {
+    padding: 1.35rem;
+}
+
+/* ==========================================================================
+   STAT & KPI CARDS (FINTECH DASHBOARD HERO METRICS)
+   ========================================================================== */
+.stat-card {
+    border-radius: var(--radius);
+    padding: 1.4rem 1.5rem;
+    color: #fff;
+    position: relative;
+    overflow: hidden;
+    border: none;
+    box-shadow: var(--shadow-card);
+    transition: transform var(--transition), box-shadow var(--transition);
+    cursor: default;
+}
+
+.stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, rgba(255,255,255,0.4), transparent);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px) scale(1.01);
+    box-shadow: var(--shadow-lg);
+}
+
+.stat-card .stat-icon {
+    font-size: 3rem;
+    opacity: 0.16;
+    position: absolute;
+    right: 1.2rem;
+    bottom: 0.8rem;
+    transition: transform var(--transition);
+}
+
+.stat-card:hover .stat-icon {
+    transform: scale(1.1) rotate(-5deg);
+    opacity: 0.22;
+}
+
+.stat-card .stat-value {
+    font-family: "Outfit", sans-serif;
+    font-size: 2.15rem;
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+}
+
+.stat-card .stat-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    opacity: 0.9;
+    margin-bottom: 0.4rem;
+}
+
+/* Gradients for Stat Cards */
+.stat-green { background: linear-gradient(135deg, #10b981 0%, #047857 100%); }
+.stat-red   { background: linear-gradient(135deg, #f43f5e 0%, #be123c 100%); }
+.stat-blue  { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
+.stat-purple{ background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); }
+.stat-gold  { background: linear-gradient(135deg, #f59e0b 0%, #b45309 100%); }
+.stat-slate { background: linear-gradient(135deg, #475569 0%, #1e293b 100%); }
+
+/* Filterable KPI cards in comparison pages */
+.filter-card {
+    cursor: pointer;
+    transition: all var(--transition);
+    position: relative;
+    border: 2px solid transparent !important;
+}
+
+.filter-card:hover {
+    transform: translateY(-3px);
+}
+
+.filter-card.filter-active-all,
+.filter-card.filter-active-cheaper,
+.filter-card.filter-active-expensive {
+    border-color: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(226, 176, 62, 0.45), var(--shadow-lg) !important;
+    transform: translateY(-4px) scale(1.02);
+}
+
+/* ==========================================================================
+   NATIVE DATA TABLES & GRIDS
+   ========================================================================== */
+.table-responsive {
+    border-radius: var(--radius);
+    background: #ffffff;
+    box-shadow: var(--shadow-card);
+    border: 1px solid var(--border);
+    overflow: hidden;
+}
+
+.table {
+    font-size: 0.9rem;
+    margin-bottom: 0;
+    vertical-align: middle;
+    width: 100%;
+}
+
+.table thead th {
+    background: #f8fafc;
+    border-bottom: 1px solid var(--border);
+    font-family: "Outfit", sans-serif;
+    font-weight: 700;
+    font-size: 0.76rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--slate-600);
+    padding: 0.95rem 1.15rem;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.table tbody td {
+    padding: 1rem 1.15rem;
+    border-bottom: 1px solid var(--slate-100);
+    color: var(--slate-800);
+    transition: background-color var(--transition);
+}
+
+.table tbody tr {
+    transition: background-color var(--transition);
+}
+
+.table tbody tr:hover {
+    background-color: #f8fafc !important;
+}
+
+.table tbody tr:hover td {
+    color: #0f172a;
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Price Tags & Difference Badges */
+.price-tag {
+    font-family: "Inter", monospace;
+    font-weight: 700;
+    font-size: 0.95rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--slate-900);
+}
+
+.price-tag-gold {
+    color: #b45309;
+    font-weight: 800;
+    background: rgba(245, 158, 11, 0.1);
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--radius-xs);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+}
+
+.diff-badge-green {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--emerald-soft);
+    color: var(--emerald-600);
+    border: 1px solid var(--emerald-border);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-pill);
+    font-variant-numeric: tabular-nums;
+}
+
+.diff-badge-red {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: var(--rose-soft);
+    color: var(--rose-600);
+    border: 1px solid var(--rose-border);
+    font-weight: 700;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-pill);
+    font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   STATUS CHIPS & REAL-TIME PULSE INDICATORS
+   ========================================================================== */
+.pulse-indicator-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.35rem 0.85rem;
+    border-radius: var(--radius-pill);
+    font-size: 0.82rem;
+    font-weight: 600;
+    backdrop-filter: blur(8px);
+}
+
+.pulse-live-green {
+    background: rgba(16, 185, 129, 0.1);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+}
+
+.pulse-live-amber {
+    background: rgba(245, 158, 11, 0.12);
+    color: #b45309;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+}
+
+.pulse-dot-green {
+    background-color: #10b981;
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    animation: pulseRing 1.8s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+.pulse-dot-amber {
+    background-color: #f59e0b;
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+    animation: pulseRing 1.4s infinite cubic-bezier(0.66, 0, 0, 1);
+}
+
+@keyframes pulseRing {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+    }
+    70% {
+        transform: scale(1);
+        box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+    }
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+    }
+}
+
+/* ==========================================================================
+   ANIMATIONS & UTILITIES
+   ========================================================================== */
+.spin {
+    animation: spinAnimation 1s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spinAnimation {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes fadeInSlideUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-fade-in {
+    animation: fadeInSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Form Controls Native Styling */
+.form-control, .form-select {
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border-strong);
+    padding: 0.65rem 1rem;
+    font-size: 0.92rem;
+    transition: all var(--transition);
+    background-color: #ffffff;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: var(--gold-500);
+    box-shadow: 0 0 0 3.5px rgba(226, 176, 62, 0.2);
+    outline: none;
+}
+
+/* Login Page Container */
+.login-container {
+    max-width: 450px;
+    margin: 0 auto;
+    padding: 2.75rem 2.25rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.text-gold {
+    color: var(--gold-500) !important;
+}
+
+.text-gold-gradient {
+    background: var(--gold-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Modern Sleek Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+    }
+    .page {
+        flex-direction: column;
+    }
+    .topbar-native {
+        padding: 0 1rem;
+    }
+    .content {
+        padding: 1.25rem 1rem !important;
+    }
+    .login-hero-side {
+        border-right: none !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+        padding: 2.5rem 2rem !important;
+    }
+    .login-form-side {
+        padding: 2.5rem 2rem !important;
+    }
+}
+
+/* ==========================================================================
+   ADDITIONAL STAT GRADIENTS (PAZARAMA & MARKETPLACES)
+   ========================================================================== */
+.stat-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #312e81 100%) !important;
+    color: #ffffff !important;
+}
+.stat-amber {
+    background: linear-gradient(135deg, #d97706 0%, #78350f 100%) !important;
+    color: #ffffff !important;
+}
+.stat-teal {
+    background: linear-gradient(135deg, #0d9488 0%, #134e4a 100%) !important;
+    color: #ffffff !important;
+}
+
+/* ==========================================================================
+   LUXURY FINTECH LOGIN PAGE STYLES
+   ========================================================================== */
+.login-screen-bg {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: 
+        radial-gradient(circle at 15% 20%, rgba(226, 176, 62, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 85% 80%, rgba(79, 70, 229, 0.15) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 60%),
+        linear-gradient(135deg, #070a12 0%, #0c1222 50%, #060911 100%);
+    padding: 2rem 1.25rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.login-screen-bg::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: radial-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+}
+
+.login-modal-wrapper {
+    width: 100%;
+    max-width: 960px;
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 24px;
+    box-shadow: 
+        0 25px 60px -12px rgba(0, 0, 0, 0.75),
+        0 0 0 1px rgba(226, 176, 62, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15);
+    overflow: hidden;
+    position: relative;
+    z-index: 10;
+}
+
+.login-hero-side {
+    padding: 3.5rem 3rem;
+    background: linear-gradient(180deg, rgba(226, 176, 62, 0.07) 0%, rgba(79, 70, 229, 0.06) 100%);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.login-form-side {
+    padding: 3.5rem 3rem;
+    background: rgba(15, 23, 42, 0.55);
+}
+
+.login-input-group {
+    position: relative;
+    margin-bottom: 1.25rem;
+}
+
+.login-input-group label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--slate-300);
+    margin-bottom: 0.45rem;
+    letter-spacing: 0.02em;
+}
+
+.login-input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.login-input-wrapper .input-icon {
+    position: absolute;
+    left: 1rem;
+    color: var(--gold-500);
+    font-size: 1.15rem;
+    pointer-events: none;
+    z-index: 2;
+}
+
+.login-input-wrapper .form-control {
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.14) !important;
+    border-radius: 12px !important;
+    padding: 0.8rem 1rem 0.8rem 2.8rem !important;
+    color: #ffffff !important;
+    font-size: 0.95rem !important;
+    transition: all var(--transition) !important;
+}
+
+.login-input-wrapper .form-control:focus {
+    background: rgba(255, 255, 255, 0.09) !important;
+    border-color: var(--gold-500) !important;
+    box-shadow: 0 0 0 4px rgba(226, 176, 62, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.login-input-wrapper .form-control::placeholder {
+    color: rgba(255, 255, 255, 0.35) !important;
+}
+
+.login-input-wrapper .toggle-pwd-btn {
+    position: absolute;
+    right: 0.75rem;
+    background: none;
+    border: none;
+    color: var(--slate-400);
+    padding: 0.4rem;
+    cursor: pointer;
+    font-size: 1.1rem;
+    z-index: 2;
+}
+.login-input-wrapper .toggle-pwd-btn:hover {
+    color: var(--gold-400);
 }

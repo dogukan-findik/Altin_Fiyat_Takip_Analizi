@@ -81,69 +81,61 @@
     else
     {
         @* Genel Özet Kartları - Tıklanabilir Filtreleme *@
-        <div class="row mb-4">
+        <div class="row g-3 mb-4">
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
-                     style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); cursor: pointer; transition: all 0.25s ease;"
+                <div class="stat-card stat-blue filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
                      @onclick="@(() => ToggleFilter("all"))">
-                    <div class="card-body text-white text-center">
-                        <div class="d-flex justify-content-center align-items-center mb-1">
-                            <h6 class="mb-0 opacity-75">Toplam Satıcı</h6>
-                            @if (_activeFilter == "all")
-                            {
-                                <span class="badge bg-light text-dark ms-2" style="font-size:0.7rem;">Seçili</span>
-                            }
-                        </div>
-                        <h2 class="fw-bold mb-0">@_sellers.Count</h2>
+                    <i class="bi bi-people stat-icon"></i>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="stat-label">Toplam Satıcı</div>
+                        @if (_activeFilter == "all")
+                        {
+                            <span class="badge bg-white text-dark rounded-pill px-2 py-0.5" style="font-size:0.7rem; font-weight:700;">Seçili</span>
+                        }
                     </div>
+                    <div class="stat-value">@_sellers.Count</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
-                     style="background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%); cursor: pointer; transition: all 0.25s ease;"
+                <div class="stat-card stat-purple filter-card @(_activeFilter == "all" ? "filter-active-all" : "")"
                      @onclick="@(() => ToggleFilter("all"))">
-                    <div class="card-body text-white text-center">
-                        <div class="d-flex justify-content-center align-items-center mb-1">
-                            <h6 class="mb-0 opacity-75">Toplam Ürün</h6>
-                            @if (_activeFilter == "all")
-                            {
-                                <span class="badge bg-light text-dark ms-2" style="font-size:0.7rem;">Seçili</span>
-                            }
-                        </div>
-                        <h2 class="fw-bold mb-0">@_totalProducts</h2>
+                    <i class="bi bi-box-seam stat-icon"></i>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="stat-label">Toplam Ürün</div>
+                        @if (_activeFilter == "all")
+                        {
+                            <span class="badge bg-white text-dark rounded-pill px-2 py-0.5" style="font-size:0.7rem; font-weight:700;">Seçili</span>
+                        }
                     </div>
+                    <div class="stat-value">@_totalProducts</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "cheaper" ? "filter-active-cheaper" : "")"
-                     style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%); cursor: pointer; transition: all 0.25s ease;"
+                <div class="stat-card stat-green filter-card @(_activeFilter == "cheaper" ? "filter-active-cheaper" : "")"
                      @onclick="@(() => ToggleFilter("cheaper"))">
-                    <div class="card-body text-white text-center">
-                        <div class="d-flex justify-content-center align-items-center mb-1">
-                            <h6 class="mb-0 opacity-75">Biz Ucuzuz</h6>
-                            @if (_activeFilter == "cheaper")
-                            {
-                                <span class="badge bg-light text-success ms-2" style="font-size:0.7rem;">Seçili</span>
-                            }
-                        </div>
-                        <h2 class="fw-bold mb-0">@_cheaperCount</h2>
+                    <i class="bi bi-shield-check stat-icon"></i>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="stat-label">Biz Ucuzuz</div>
+                        @if (_activeFilter == "cheaper")
+                        {
+                            <span class="badge bg-white text-success rounded-pill px-2 py-0.5" style="font-size:0.7rem; font-weight:700;">Seçili</span>
+                        }
                     </div>
+                    <div class="stat-value">@_cheaperCount</div>
                 </div>
             </div>
             <div class="col-md-3">
-                <div class="card border-0 shadow-sm filter-card @(_activeFilter == "expensive" ? "filter-active-expensive" : "")"
-                     style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%); cursor: pointer; transition: all 0.25s ease;"
+                <div class="stat-card stat-red filter-card @(_activeFilter == "expensive" ? "filter-active-expensive" : "")"
                      @onclick="@(() => ToggleFilter("expensive"))">
-                    <div class="card-body text-white text-center">
-                        <div class="d-flex justify-content-center align-items-center mb-1">
-                            <h6 class="mb-0 opacity-75">Biz Pahalıyız</h6>
-                            @if (_activeFilter == "expensive")
-                            {
-                                <span class="badge bg-light text-danger ms-2" style="font-size:0.7rem;">Seçili</span>
-                            }
-                        </div>
-                        <h2 class="fw-bold mb-0">@_expensiveCount</h2>
+                    <i class="bi bi-exclamation-triangle stat-icon"></i>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="stat-label">Biz Pahalıyız</div>
+                        @if (_activeFilter == "expensive")
+                        {
+                            <span class="badge bg-white text-danger rounded-pill px-2 py-0.5" style="font-size:0.7rem; font-weight:700;">Seçili</span>
+                        }
                     </div>
+                    <div class="stat-value">@_expensiveCount</div>
                 </div>
             </div>
         </div>
@@ -278,33 +270,34 @@
 
             var filteredProducts = GetFilteredProducts(seller.Products);
 
-            <div class="card mb-4 border-0 shadow-sm overflow-hidden">
-                <div class="card-header border-0 py-3"
-                     style="background: linear-gradient(135deg, #112d4e 0%, #1a365d 100%); color: white;">
-                    <div class="d-flex justify-content-between align-items-center">
+            <div class="card mb-4 border-0 shadow-sm overflow-hidden" style="border-radius:16px;">
+                <div class="card-header seller-card-header border-0 py-3 px-4">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="d-flex align-items-center">
-                            <span style="font-size:1.5rem" class="me-2">🏪</span>
+                            <span style="font-size:1.4rem; display:inline-flex; align-items:center; justify-content:center; width:38px; height:38px; border-radius:10px; background:rgba(226,176,62,0.18); border:1px solid rgba(226,176,62,0.35); margin-right:0.75rem;">🏪</span>
                             <div>
-                                <h5 class="mb-0 fw-bold">@seller.SellerName</h5>
-                                <small class="opacity-75">
+                                <h5 class="mb-0 fw-bold font-heading text-white" style="color:#ffffff !important; font-size:1.2rem; letter-spacing:-0.01em;">
+                                    @seller.SellerName
+                                </h5>
+                                <small style="color:#cbd5e1 !important; font-size:0.82rem;">
                                     @if (_activeFilter == "expensive")
                                     {
-                                        <span class="text-danger fw-semibold">@filteredProducts.Count pahalı ürün gösteriliyor</span>
+                                        <span style="color:#f87171 !important; font-weight:600;">@filteredProducts.Count pahalı ürün gösteriliyor</span>
                                     }
                                     else if (_activeFilter == "cheaper")
                                     {
-                                        <span class="text-success fw-semibold">@filteredProducts.Count ucuz ürün gösteriliyor</span>
+                                        <span style="color:#4ade80 !important; font-weight:600;">@filteredProducts.Count ucuz ürün gösteriliyor</span>
                                     }
                                     else
                                     {
-                                        <span>@seller.Products.Count ürün takip ediliyor (PTTAVM)</span>
+                                        <span style="color:#cbd5e1 !important;">@seller.Products.Count ürün takip ediliyor (PTTAVM)</span>
                                     }
                                 </small>
                             </div>
                         </div>
                         <div class="d-flex gap-2">
-                            <span class="badge bg-success px-3 py-2">✅ @sellerCheaper ucuz</span>
-                            <span class="badge bg-danger px-3 py-2">⚠️ @sellerExpensive pahalı</span>
+                            <span class="badge bg-success px-3 py-2 font-heading fw-bold" style="box-shadow:0 2px 8px rgba(16,185,129,0.3);">✅ @sellerCheaper ucuz</span>
+                            <span class="badge bg-danger px-3 py-2 font-heading fw-bold" style="box-shadow:0 2px 8px rgba(239,68,68,0.3);">⚠️ @sellerExpensive pahalı</span>
                             @if (sellerEqual > 0)
                             {
                                 <span class="badge bg-secondary px-3 py-2">➖ @sellerEqual eşit</span>

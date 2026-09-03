@@ -74,32 +74,26 @@
     }
     else
     {
-        <div class="row mb-4">
+        <div class="row g-3 mb-4">
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                    <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Biz Daha Ucuzuz</h6>
-                        <h2 class="fw-bold mb-0">@_cheaperCount</h2>
-                        <small class="opacity-75">ürün</small>
-                    </div>
+                <div class="stat-card stat-green shadow-sm">
+                    <i class="bi bi-shield-check stat-icon"></i>
+                    <div class="stat-label">Biz Daha Ucuzuz</div>
+                    <div class="stat-value">@_cheaperCount <span style="font-size:1rem; font-weight:500; opacity:0.85;">ürün</span></div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%);">
-                    <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Biz Daha Pahalıyız</h6>
-                        <h2 class="fw-bold mb-0">@_expensiveCount</h2>
-                        <small class="opacity-75">ürün</small>
-                    </div>
+                <div class="stat-card stat-red shadow-sm">
+                    <i class="bi bi-exclamation-triangle stat-icon"></i>
+                    <div class="stat-label">Biz Daha Pahalıyız</div>
+                    <div class="stat-value">@_expensiveCount <span style="font-size:1rem; font-weight:500; opacity:0.85;">ürün</span></div>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #6c757d 0%, #adb5bd 100%);">
-                    <div class="card-body text-white text-center">
-                        <h6 class="mb-1 opacity-75">Veri Yok / Eşit</h6>
-                        <h2 class="fw-bold mb-0">@_equalCount</h2>
-                        <small class="opacity-75">ürün</small>
-                    </div>
+                <div class="stat-card stat-slate shadow-sm">
+                    <i class="bi bi-dash-circle stat-icon"></i>
+                    <div class="stat-label">Veri Yok / Eşit</div>
+                    <div class="stat-value">@_equalCount <span style="font-size:1rem; font-weight:500; opacity:0.85;">ürün</span></div>
                 </div>
             </div>
         </div>
@@ -109,36 +103,28 @@
             var validPrices = product.SellerPrices.Where(sp => sp.Price.HasValue).ToList();
             if (!validPrices.Any()) continue;
 
-            <div class="card mb-4 border-0 shadow-sm">
-                <div class="card-header border-0 d-flex justify-content-between align-items-center"
-                     style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: white;">
-                    <div class="d-flex align-items-center">
-                        <span style="font-size:1.4rem" class="me-2">💰</span>
-                        <h5 class="mb-0 fw-bold">@product.ProductName</h5>
+            <div class="card mb-4 border-0 shadow-sm" style="border-radius:16px;">
+                <div class="card-header d-flex justify-content-between align-items-center py-3 px-4"
+                     style="background: linear-gradient(135deg, #090e1a 0%, #1e293b 100%); color: white; border-top-left-radius:16px; border-top-right-radius:16px;">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="font-size:1.4rem">💰</span>
+                        <h5 class="mb-0 fw-bold font-heading text-white">@product.ProductName</h5>
                     </div>
                     <div>
-                        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
-                            Bizim: @FormatPrice(product.OurPrice) ₺
+                        <span class="badge badge-our-price fs-6 px-3 py-2">
+                            Bizim Fiyat: @FormatPrice(product.OurPrice) ₺
                         </span>
                     </div>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table class="table table-hover mb-0 align-middle">
-                            <thead style="background-color: #f8f9fa;">
+                            <thead style="background:#f8fafc;">
                                 <tr>
-                                    <th class="ps-4" style="width: 35%">
-                                        <span class="text-muted">🏛️ Banka</span>
-                                    </th>
-                                    <th style="width: 25%" class="text-end">
-                                        <span class="text-muted">Banka Fiyatı</span>
-                                    </th>
-                                    <th style="width: 20%" class="text-end">
-                                        <span class="text-muted">Fark (TL)</span>
-                                    </th>
-                                    <th style="width: 20%" class="text-center">
-                                        <span class="text-muted">Durum</span>
-                                    </th>
+                                    <th class="ps-4" style="width: 35%">🏛️ Banka</th>
+                                    <th style="width: 25%" class="text-end">Banka Fiyatı</th>
+                                    <th style="width: 20%" class="text-end">Fark (TL)</th>
+                                    <th style="width: 20%" class="text-center">Durum</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -146,21 +132,21 @@
                                 {
                                     var isOurCheaper = sp.DiffFromOurs.HasValue && sp.DiffFromOurs.Value > 0;
                                     var isOurExpensive = sp.DiffFromOurs.HasValue && sp.DiffFromOurs.Value < 0;
-                                    var rowBg = isOurCheaper ? "background-color: rgba(40, 167, 69, 0.05);"
-                                              : isOurExpensive ? "background-color: rgba(220, 53, 69, 0.05);"
+                                    var rowBg = isOurCheaper ? "background-color: rgba(16, 185, 129, 0.05);"
+                                              : isOurExpensive ? "background-color: rgba(244, 63, 94, 0.05);"
                                               : "";
 
                                     <tr style="@rowBg">
-                                        <td class="ps-4 fw-semibold">
-                                            <span class="me-2">🏦</span> @sp.SellerName
+                                        <td class="ps-4 fw-semibold text-dark">
+                                            <span class="me-2 opacity-75">🏛️</span> @sp.SellerName
                                         </td>
-                                        <td class="text-end fw-bold" style="font-size: 1.05rem;">
+                                        <td class="text-end fw-bold price-tag" style="font-size: 1.05rem;">
                                             @FormatPrice(sp.Price.Value) ₺
                                         </td>
                                         <td class="text-end fw-bold @(isOurCheaper ? "text-success" : isOurExpensive ? "text-danger" : "text-muted")">
                                             @if (sp.DiffFromOurs.HasValue)
                                             {
-                                                <span>
+                                                <span class="num-tabular">
                                                     @(sp.DiffFromOurs.Value > 0 ? "+" : "")@FormatPrice(sp.DiffFromOurs.Value) ₺
                                                 </span>
                                             }
@@ -172,19 +158,19 @@
                                         <td class="text-center">
                                             @if (isOurCheaper)
                                             {
-                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #d4edda; color: #155724;">
-                                                    ✅ Biz Ucuzuz
+                                                <span class="diff-badge-green">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>Biz Ucuzuz
                                                 </span>
                                             }
                                             else if (isOurExpensive)
                                             {
-                                                <span class="badge rounded-pill px-3 py-2" style="background-color: #f8d7da; color: #721c24;">
-                                                    ⚠️ Biz Pahalıyız
+                                                <span class="diff-badge-red">
+                                                    <i class="bi bi-arrow-up-right-circle-fill me-1"></i>Rakip Ucuz
                                                 </span>
                                             }
                                             else
                                             {
-                                                <span class="badge rounded-pill bg-secondary px-3 py-2">➖ Eşit</span>
+                                                <span class="badge rounded-pill bg-secondary px-3 py-1.5">➖ Eşit</span>
                                             }
                                         </td>
                                     </tr>

@@ -2,11 +2,11 @@ using System.Diagnostics;
 
 namespace Altin_Fiyat_Takip_Analizi.API.BackgroundServices;
 
-/// <summary>
+
 /// API process'i ayakta olduğu sürece her 1 dakikada bir
 /// scraper/sync_own_prices.py script'ini çalıştırıp kendi mağaza fiyatlarını günceller.
 /// Scheduler projesinden bağımsızdır — API ile birlikte her zaman aktiftir.
-/// </summary>
+
 public class OwnPriceSyncBackgroundService : BackgroundService
 {
     private readonly IConfiguration _configuration;

@@ -6,10 +6,10 @@ using Quartz;
 
 namespace Altin_Fiyat_Takip_Analizi.Scheduler.Jobs;
 
-/// <summary>
-/// Ahlatcı Store kendi mağaza fiyatlarını (sync_own_prices.py) her 5 dakikada bir günceller.
+
+///  kendi mağaza fiyatlarımızı (sync_own_prices.py) her  dakikada bir güncelliyoruz.
 /// Bu job PriceCollectionJob'dan bağımsızdır — kendi ayrı zamanlayıcısı vardır.
-/// </summary>
+
 public class OwnPriceSyncJob : IJob
 {
     private readonly IConfiguration _configuration;

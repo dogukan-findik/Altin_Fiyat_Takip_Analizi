@@ -1,7 +1,387 @@
-﻿@page "/"
+@page "/"
+@using Altin_Fiyat_Takip_Analizi.Web.Services
+@inject ApiService Api
+@inject NavigationManager Nav
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Anasayfa - Altin Fiyat Takip</PageTitle>
 
-<h1>Hello, world!</h1>
+@if (!Api.IsAuthenticated)
+{
+    <!-- Luxury Unauthenticated Showcase Landing Panel -->
+    <div class="landing-hero-bg">
+        <!-- Top Navigation Header -->
+        <header class="landing-header">
+            <div class="d-flex align-items-center gap-3">
+                <span style="display:inline-flex; align-items:center; justify-content:center; width:44px; height:44px; border-radius:12px; background:linear-gradient(135deg, rgba(226,176,62,0.25), rgba(226,176,62,0.06)); border:1px solid rgba(226,176,62,0.4); font-size:1.5rem; box-shadow:0 0 20px rgba(226,176,62,0.2);">
+                    💰
+                </span>
+                <div>
+                    <h4 class="font-heading fw-bold text-white mb-0" style="letter-spacing:-0.02em;">Ahlatcı Finans</h4>
+                    <small class="text-gold-gradient fw-bold" style="font-size:0.75rem; letter-spacing:0.04em;">ALTIN TAKİP & ANALİZ SİSTEMİ</small>
+                </div>
+            </div>
 
-Welcome to your new app.
+            <div class="d-flex align-items-center gap-3">
+                <div class="pulse-indicator-container pulse-live-green d-none d-md-inline-flex" style="background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.25);">
+                    <span class="pulse-dot pulse-dot-green"></span>
+                    <span class="text-white" style="font-size:0.78rem;">Canlı Piyasa ve Arbitraj Portalı</span>
+                </div>
+                <button class="btn btn-gold px-3.5 py-2 rounded-3 font-heading fw-bold d-flex align-items-center gap-2" style="font-size:0.88rem;" @onclick="GoToLogin">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Giriş Yap</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hero Content Section -->
+        <main class="landing-hero-content text-center">
+            <div class="landing-badge-pill">
+                <i class="bi bi-shield-check"></i>
+                <span>Kurumsal Altın Fiyat & Arbitraj Portalı</span>
+            </div>
+
+            <h1 class="text-white font-heading fw-bold mb-3" style="font-size: clamp(2rem, 4vw, 3.25rem); line-height: 1.2; letter-spacing: -0.02em;">
+                Piyasa Kurları, Banka Fiyatları ve <br />
+                <span class="text-gold-gradient">Pazaryeri Arbitrajı</span>
+            </h1>
+
+            <p class="text-slate-300 mx-auto mb-4" style="max-width: 680px; font-size: 1.05rem; line-height: 1.65;">
+                QNB, Garanti ve Yapı Kredi bankaları ile N11, PTTAVM ve Pazarama pazaryerlerindeki altın fiyatlarını tek ekrandan eşzamanlı izleyin, kâr-fark makasını anlık tespit edin.
+            </p>
+
+            <div class="d-flex flex-wrap justify-content-center align-items-center gap-3 mb-5">
+                <button class="btn btn-gold px-4.5 py-3 rounded-3 font-heading fw-bold fs-5 shadow-lg d-inline-flex align-items-center gap-2" 
+                        style="letter-spacing:0.02em;" @onclick="GoToLogin">
+                    <i class="bi bi-box-arrow-in-right"></i>
+                    <span>Sisteme Giriş Yap</span>
+                </button>
+                <div class="text-slate-400 d-inline-flex align-items-center gap-2 px-3 py-2 rounded-3" style="background:rgba(255,255,255,0.04); font-size:0.85rem; border:1px solid rgba(255,255,255,0.08);">
+                    <i class="bi bi-lock-fill text-gold"></i>
+                    <span>256-bit SSL Korumalı Yetkili Portalı</span>
+                </div>
+            </div>
+
+            <!-- 5 Platforms Showcase Grid -->
+            <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 row-cols-xl-5 g-3 mb-5 text-start">
+                <!-- 1. Banka -->
+                <div class="col">
+                    <div class="landing-platform-card" @onclick="GoToLogin">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px; background:rgba(59,130,246,0.18); color:var(--blue-400); font-size:1.2rem;">
+                                    <i class="bi bi-bank"></i>
+                                </div>
+                                <span class="badge rounded-pill" style="background:rgba(59,130,246,0.2); color:#93c5fd; font-size:0.72rem; border:1px solid rgba(59,130,246,0.35);">Banka</span>
+                            </div>
+                            <h5 class="fw-bold font-heading text-white mb-1">Banka Kurları</h5>
+                            <p class="text-slate-400 mb-0" style="font-size:0.8rem; line-height:1.45;">QNB, Garanti BBVA ve Yapı Kredi canlı altın kurları.</p>
+                        </div>
+                        <div class="mt-3 text-gold fw-semibold" style="font-size:0.8rem;">İncele <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 2. N11 -->
+                <div class="col">
+                    <div class="landing-platform-card" @onclick="GoToLogin">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px; background:rgba(139,92,246,0.18); color:var(--purple-400); font-size:1.2rem;">
+                                    <i class="bi bi-shop"></i>
+                                </div>
+                                <span class="badge rounded-pill" style="background:rgba(139,92,246,0.2); color:#c4b5fd; font-size:0.72rem; border:1px solid rgba(139,92,246,0.35);">Pazaryeri</span>
+                            </div>
+                            <h5 class="fw-bold font-heading text-white mb-1">N11 Pazaryeri</h5>
+                            <p class="text-slate-400 mb-0" style="font-size:0.8rem; line-height:1.45;">N11 satıcılarının altın ve ziynet fiyat karşılaştırması.</p>
+                        </div>
+                        <div class="mt-3 text-gold fw-semibold" style="font-size:0.8rem;">İncele <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 3. PTTAVM -->
+                <div class="col">
+                    <div class="landing-platform-card" @onclick="GoToLogin">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px; background:rgba(245,158,11,0.18); color:var(--gold-400); font-size:1.2rem;">
+                                    <i class="bi bi-bag-check-fill"></i>
+                                </div>
+                                <span class="badge rounded-pill" style="background:rgba(245,158,11,0.2); color:#fde68a; font-size:0.72rem; border:1px solid rgba(245,158,11,0.35);">Pazaryeri</span>
+                            </div>
+                            <h5 class="fw-bold font-heading text-white mb-1">PTTAVM</h5>
+                            <p class="text-slate-400 mb-0" style="font-size:0.8rem; line-height:1.45;">PTTAVM platformu altın kampanyaları ve satıcı analizi.</p>
+                        </div>
+                        <div class="mt-3 text-gold fw-semibold" style="font-size:0.8rem;">İncele <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 4. Pazarama -->
+                <div class="col">
+                    <div class="landing-platform-card" @onclick="GoToLogin">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px; background:rgba(79,70,229,0.18); color:#818cf8; font-size:1.2rem;">
+                                    <i class="bi bi-cart4"></i>
+                                </div>
+                                <span class="badge rounded-pill" style="background:rgba(79,70,229,0.2); color:#c7d2fe; font-size:0.72rem; border:1px solid rgba(79,70,229,0.35);">Pazaryeri</span>
+                            </div>
+                            <h5 class="fw-bold font-heading text-white mb-1">Pazarama</h5>
+                            <p class="text-slate-400 mb-0" style="font-size:0.8rem; line-height:1.45;">Pazarama altın ürünleri ve güncel fiyat farkı takibi.</p>
+                        </div>
+                        <div class="mt-3 text-gold fw-semibold" style="font-size:0.8rem;">İncele <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+
+                <!-- 5. Günlük Raporlar -->
+                <div class="col">
+                    <div class="landing-platform-card" @onclick="GoToLogin">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <div class="rounded-circle d-flex align-items-center justify-content-center" style="width:40px; height:40px; background:rgba(16,185,129,0.18); color:var(--emerald-400); font-size:1.2rem;">
+                                    <i class="bi bi-file-earmark-bar-graph"></i>
+                                </div>
+                                <span class="badge rounded-pill" style="background:rgba(16,185,129,0.2); color:#a7f3d0; font-size:0.72rem; border:1px solid rgba(16,185,129,0.35);">Rapor</span>
+                            </div>
+                            <h5 class="fw-bold font-heading text-white mb-1">Günlük Rapor</h5>
+                            <p class="text-slate-400 mb-0" style="font-size:0.8rem; line-height:1.45;">Detaylı günlük özet, arbitraj analizleri ve PDF çıktıları.</p>
+                        </div>
+                        <div class="mt-3 text-gold fw-semibold" style="font-size:0.8rem;">İncele <i class="bi bi-arrow-right"></i></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Highlights Row -->
+            <div class="row g-3 text-start">
+                <div class="col-md-4">
+                    <div class="landing-feature-box">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-arrow-repeat text-gold fs-5"></i>
+                            <h6 class="fw-bold font-heading text-white mb-0">Python Arka Plan Motoru</h6>
+                        </div>
+                        <p class="text-slate-400 mb-0" style="font-size:0.83rem; line-height:1.5;">
+                            Pazaryeri ve banka fiyatları arka planda otomatik taranarak fiyat geçmişi canlı tutulur.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="landing-feature-box">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-graph-up-arrow text-emerald fs-5"></i>
+                            <h6 class="fw-bold font-heading text-white mb-0">Akıllı Arbitraj Tespiti</h6>
+                        </div>
+                        <p class="text-slate-400 mb-0" style="font-size:0.83rem; line-height:1.5;">
+                            Ahlatcı mağaza fiyatı baz alınarak rakiplerle anlık fiyat farkı ve avantaj hesabı yapılır.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="landing-feature-box">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <i class="bi bi-shield-lock-fill text-gold fs-5"></i>
+                            <h6 class="fw-bold font-heading text-white mb-0">Kurumsal Güvenlik & API</h6>
+                        </div>
+                        <p class="text-slate-400 mb-0" style="font-size:0.83rem; line-height:1.5;">
+                            JWT şifreli erişim kontrolü ve rol tabanlı güvenli yönetim altyapısı.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Landing Footer -->
+        <footer class="text-center py-3" style="border-top:1px solid rgba(255,255,255,0.06); color:var(--slate-500); font-size:0.8rem;">
+            © @DateTime.Now.Year Ahlatcı Kuyumculuk &bull; Altın Fiyat Takip & Analizi Portalı
+        </footer>
+    </div>
+}
+else
+{
+    <div class="page-header d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <div>
+            <h2 class="font-heading mb-1" style="font-size:1.85rem;">Hoş geldin, <span class="text-gold-gradient fw-bold">@Api.CurrentUsername</span></h2>
+            <p class="text-muted mb-0">Altın fiyat takip ve arbitraj analiz sistemine genel bakış</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="pulse-indicator-container pulse-live-green">
+                <span class="pulse-dot pulse-dot-green"></span>
+                <span>Piyasa Çevrimiçi</span>
+            </span>
+            <span class="badge rounded-pill px-3 py-2 text-uppercase" style="background:rgba(226,176,62,.15); color:#e2b03e; font-weight:700; font-size:.82rem; border:1px solid rgba(226,176,62,.3);">
+                <i class="bi bi-shield-check me-1"></i>@Api.CurrentRole
+            </span>
+        </div>
+    </div>
+
+    <!-- Quick Navigation Cards Grid (5 Platforms: Banka, N11, PTTAVM, Pazarama, Raporlar) -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xl-5 g-3 mb-4">
+        <!-- 1. Banka Kurları -->
+        <div class="col">
+            <div class="card border-0 card-hoverable h-100" style="cursor:pointer; border-radius:18px;" @onclick="GoToBank">
+                <div class="card-body p-3.5 stat-blue d-flex flex-column justify-content-between h-100" style="border-radius:18px;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.2); width:42px; height:42px;">
+                                <i class="bi bi-bank" style="font-size:1.35rem; color:#fff;"></i>
+                            </div>
+                            <span class="badge rounded-pill" style="background:rgba(0,0,0,0.22); color:#ffffff; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,255,255,0.28); padding:3px 9px;">Canlı</span>
+                        </div>
+                        <h4 class="fw-bold font-heading text-white mb-1" style="font-size:1.25rem;">Banka Kurları</h4>
+                        <p class="text-white text-opacity-80 mb-3" style="font-size:0.82rem; line-height:1.4;">QNB, Garanti ve Yapı Kredi altın kurları karşılaştırması.</p>
+                    </div>
+                    <span class="text-white fw-bold d-inline-flex align-items-center gap-1 mt-auto" style="font-size:0.82rem;">
+                        İncele <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. N11 Pazaryeri -->
+        <div class="col">
+            <div class="card border-0 card-hoverable h-100" style="cursor:pointer; border-radius:18px;" @onclick="GoToMarketplace">
+                <div class="card-body p-3.5 stat-purple d-flex flex-column justify-content-between h-100" style="border-radius:18px;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.2); width:42px; height:42px;">
+                                <i class="bi bi-shop" style="font-size:1.35rem; color:#fff;"></i>
+                            </div>
+                            <span class="badge rounded-pill" style="background:rgba(0,0,0,0.22); color:#ffffff; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,255,255,0.28); padding:3px 9px;">Pazaryeri</span>
+                        </div>
+                        <h4 class="fw-bold font-heading text-white mb-1" style="font-size:1.25rem;">N11 Pazaryeri</h4>
+                        <p class="text-white text-opacity-80 mb-3" style="font-size:0.82rem; line-height:1.4;">N11 satıcılarının altın ve ziynet fiyat karşılaştırması.</p>
+                    </div>
+                    <span class="text-white fw-bold d-inline-flex align-items-center gap-1 mt-auto" style="font-size:0.82rem;">
+                        İncele <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. PTTAVM Pazaryeri -->
+        <div class="col">
+            <div class="card border-0 card-hoverable h-100" style="cursor:pointer; border-radius:18px;" @onclick="@(() => Nav.NavigateTo("/pttavm-karsilastirma"))">
+                <div class="card-body p-3.5 stat-amber d-flex flex-column justify-content-between h-100" style="border-radius:18px;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.2); width:42px; height:42px;">
+                                <i class="bi bi-bag-check-fill" style="font-size:1.35rem; color:#fff;"></i>
+                            </div>
+                            <span class="badge rounded-pill" style="background:rgba(0,0,0,0.22); color:#ffffff; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,255,255,0.28); padding:3px 9px;">Pazaryeri</span>
+                        </div>
+                        <h4 class="fw-bold font-heading text-white mb-1" style="font-size:1.25rem;">PTTAVM</h4>
+                        <p class="text-white text-opacity-80 mb-3" style="font-size:0.82rem; line-height:1.4;">PTTAVM altın kampanyaları ve satıcı ürün fiyatları.</p>
+                    </div>
+                    <span class="text-white fw-bold d-inline-flex align-items-center gap-1 mt-auto" style="font-size:0.82rem;">
+                        İncele <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. Pazarama Pazaryeri (YENİ EKLENDİ) -->
+        <div class="col">
+            <div class="card border-0 card-hoverable h-100" style="cursor:pointer; border-radius:18px;" @onclick="@(() => Nav.NavigateTo("/pazarama-karsilastirma"))">
+                <div class="card-body p-3.5 stat-indigo d-flex flex-column justify-content-between h-100" style="border-radius:18px;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.2); width:42px; height:42px;">
+                                <i class="bi bi-cart4" style="font-size:1.35rem; color:#fff;"></i>
+                            </div>
+                            <span class="badge rounded-pill" style="background:rgba(0,0,0,0.22); color:#ffffff; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,255,255,0.28); padding:3px 9px;">Pazaryeri</span>
+                        </div>
+                        <h4 class="fw-bold font-heading text-white mb-1" style="font-size:1.25rem;">Pazarama</h4>
+                        <p class="text-white text-opacity-80 mb-3" style="font-size:0.82rem; line-height:1.4;">Pazarama satıcılarının ürünleri ve anlık kur analizi.</p>
+                    </div>
+                    <span class="text-white fw-bold d-inline-flex align-items-center gap-1 mt-auto" style="font-size:0.82rem;">
+                        İncele <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Günlük Raporlar -->
+        <div class="col">
+            <div class="card border-0 card-hoverable h-100" style="cursor:pointer; border-radius:18px;" @onclick="GoToReports">
+                <div class="card-body p-3.5 stat-green d-flex flex-column justify-content-between h-100" style="border-radius:18px;">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="rounded-circle d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.2); width:42px; height:42px;">
+                                <i class="bi bi-file-earmark-bar-graph" style="font-size:1.35rem; color:#fff;"></i>
+                            </div>
+                            <span class="badge rounded-pill" style="background:rgba(0,0,0,0.22); color:#ffffff; font-size:0.72rem; font-weight:700; border:1px solid rgba(255,255,255,0.28); padding:3px 9px;">Rapor</span>
+                        </div>
+                        <h4 class="fw-bold font-heading text-white mb-1" style="font-size:1.25rem;">Günlük Rapor</h4>
+                        <p class="text-white text-opacity-80 mb-3" style="font-size:0.82rem; line-height:1.4;">Detaylı günlük özet ve en ucuz/pahalı analizleri.</p>
+                    </div>
+                    <span class="text-white fw-bold d-inline-flex align-items-center gap-1 mt-auto" style="font-size:0.82rem;">
+                        İncele <i class="bi bi-arrow-right"></i>
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- System Features Information Box -->
+    <div class="card border-0 mb-4 shadow-sm" style="border-radius:18px;">
+        <div class="card-header d-flex align-items-center gap-2 py-3 px-4" style="background:rgba(255,255,255,0.85); border-bottom:1px solid var(--border);">
+            <i class="bi bi-cpu text-gold" style="font-size:1.25rem;"></i>
+            <h5 class="fw-bold font-heading mb-0 text-dark">Sistem Özellikleri ve Otomasyon</h5>
+        </div>
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="p-3.5 rounded-3 h-100" style="background:#f8fafc; border:1px solid var(--border);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="p-2 rounded-circle bg-primary bg-opacity-10 text-primary">
+                                <i class="bi bi-arrow-repeat"></i>
+                            </span>
+                            <h6 class="fw-bold font-heading mb-0 text-dark">Arka Plan Taraması</h6>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size:.85rem; line-height:1.5;">
+                            Pazaryeri ve banka fiyatları arka planda otomatik taranarak fiyat geçmişi canlı tutulur.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3.5 rounded-3 h-100" style="background:#f8fafc; border:1px solid var(--border);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="p-2 rounded-circle bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-shield-check"></i>
+                            </span>
+                            <h6 class="fw-bold font-heading mb-0 text-dark">Fark Analizi</h6>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size:.85rem; line-height:1.5;">
+                            Ahlatcı mağaza fiyatı baz alınarak rakiplerle anlık fiyat farkı ve arbitraj hesabı yapılır.
+                        </p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="p-3.5 rounded-3 h-100" style="background:#f8fafc; border:1px solid var(--border);">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="p-2 rounded-circle bg-warning bg-opacity-10 text-warning">
+                                <i class="bi bi-lightning-charge"></i>
+                            </span>
+                            <h6 class="fw-bold font-heading mb-0 text-dark">Canlı Senkronizasyon</h6>
+                        </div>
+                        <p class="text-muted mb-0" style="font-size:.85rem; line-height:1.5;">
+                            Kullanıcı tek tıkla Python tarayıcısını anında tetikleyebilir ve kurları güncelleyebilir.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center py-2">
+        <small class="text-muted"><i class="bi bi-clock me-1"></i>Son Sistem Güncellemesi: @DateTime.Now.ToString("dd.MM.yyyy HH:mm")</small>
+    </div>
+}
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (Api.IsAuthenticated) StateHasChanged();
+    }
+    private void GoToLogin() => Nav.NavigateTo("/login");
+    private void GoToBank() => Nav.NavigateTo("/banka-karsilastirma");
+    private void GoToMarketplace() => Nav.NavigateTo("/pazaryeri-karsilastirma");
+    private void GoToReports() => Nav.NavigateTo("/raporlar");
+}
